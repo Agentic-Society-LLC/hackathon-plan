@@ -22,7 +22,7 @@ The plan is good when it passes four tests:
 - **Who is in the room:** mostly business owners applying AI to an existing business (service businesses, brick and mortar, B2B, agencies), not software founders. Many are not developers. They build with Claude Code, Claude Cowork, Codex, or Hermes.
 - **Plans are due before the event.** Planning happens in prep week. Event days are for building.
 
-## Categories (edit before distributing)
+## Categories
 
 Every project must fit exactly one of these. If an idea fits none, help the builder reshape it or pick another idea.
 
