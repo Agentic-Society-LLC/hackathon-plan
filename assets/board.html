@@ -73,6 +73,22 @@
   .pill[aria-pressed="true"] { color: #fff; border-color: rgba(47,107,255,0.55); }
   .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-mute); }
   .pill[aria-pressed="true"] .dot { background: var(--blue); box-shadow: 0 0 0 4px var(--blue-glow); animation: pulse 2.4s ease infinite; }
+
+  /* Pomodoro timer */
+  .pomo { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+  .pomo__modes { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); }
+  .pomo__modes button { border: 0; background: transparent; color: var(--ink-mute); font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 999px; cursor: pointer; }
+  .pomo__modes button[aria-pressed="true"] { background: rgba(47,107,255,0.25); color: #fff; }
+  .pomo__time { font-size: 20px; font-weight: 500; letter-spacing: 0.02em; min-width: 4.2ch; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; padding: 0 4px; }
+  .pomo.running .pomo__time { color: #fff; text-shadow: 0 0 18px var(--blue-glow); }
+  .pomo.done .pomo__time { color: #9be7b4; }
+  .pomo.done { border-color: rgba(34,197,94,0.6); box-shadow: 0 0 24px rgba(34,197,94,0.25); animation: pomo-done 1.2s ease infinite alternate; }
+  @keyframes pomo-done { from { box-shadow: 0 0 10px rgba(34,197,94,0.15); } to { box-shadow: 0 0 28px rgba(34,197,94,0.45); } }
+  .pomo__btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--ink); cursor: pointer; font-size: 12px; display: grid; place-items: center; }
+  .pomo__btn:hover { background: var(--surface-2); }
+  .pomo__btn:focus-visible, .pomo__modes button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  #pomoGo { background: rgba(47,107,255,0.25); border-color: rgba(47,107,255,0.6); color: #fff; }
+  @media (prefers-reduced-motion: reduce) { .pomo.done { animation: none; } }
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--blue-glow); } 60% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 
   .hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; padding: 22px 0 18px; align-items: start; }
@@ -111,6 +127,7 @@
   .tier.stretch { color: var(--ink-soft); }
   .tier.prep { color: #cfd6e6; background: var(--surface-2); }
   .risk { color: #ffd98a; }
+  .x { color: #9be7b4; font-weight: 500; }
   .card.shipped .t { color: #cfe8d6; }
   .card.cut { opacity: 0.55; }
   .card.cut .t { text-decoration: line-through; }
@@ -199,7 +216,17 @@
         <button role="tab" aria-selected="false" data-view="report">Report</button>
       </div>
       <button class="pill" id="auto" aria-pressed="false" title="Reload this page every 20 seconds so the board moves while your AI works"><span class="dot"></span>Auto-refresh</button>
-      <span class="mono" id="updated" style="font-size:11px;color:var(--ink-mute)"></span>
+      <!-- Pomodoro: 25 build / 5 look-at-the-board. Survives the auto-refresh
+           reload (state in localStorage), chimes at zero. -->
+      <div class="pomo" id="pomo" aria-label="Pomodoro timer">
+        <div class="pomo__modes" role="group" aria-label="Length">
+          <button type="button" data-min="25" aria-pressed="true" title="25 minutes: build">25</button>
+          <button type="button" data-min="5" aria-pressed="false" title="5 minutes: look at the board, decide">5</button>
+        </div>
+        <output class="pomo__time mono" id="pomoTime" aria-live="off">25:00</output>
+        <button type="button" class="pomo__btn" id="pomoGo" aria-label="Start">▶</button>
+        <button type="button" class="pomo__btn" id="pomoReset" aria-label="Reset">↺</button>
+      </div>
     </div>
   </header>
 
@@ -250,6 +277,10 @@
 <!--
   DATA. The AI edits ONLY this block. Keep every key; add tickets freely.
 
+  event     the run of show, times only: agenda[] = {start, end, label,
+            kind: program | build | break | deadline, session (for build
+            blocks)} and submitBy. The clock card and "build time left" read
+            it. Edit only to reuse the board for a different event.
   builder   name, business, level (1-3), tools[]
   project   oneLiner, category, doneWall (12 words or fewer), demoMoment,
             done[] = {text, ok}  the definition-of-done checks, ticked live
@@ -288,6 +319,31 @@
       { "text": "Nothing sends without Maria clicking Send", "ok": true }
     ]
   },
+  "event": {
+    "name": "2-Day AI Hackathon",
+    "timezone": "America/Chicago",
+    "submitBy": "2026-10-16T14:45",
+    "agenda": [
+      { "start": "2026-10-15T08:00", "end": "2026-10-15T10:00", "label": "Doors, check-in, breakfast", "kind": "program" },
+      { "start": "2026-10-15T10:00", "end": "2026-10-15T10:45", "label": "Opening remarks", "kind": "program" },
+      { "start": "2026-10-15T10:45", "end": "2026-10-15T11:00", "label": "Seat by AI level", "kind": "program" },
+      { "start": "2026-10-15T11:00", "end": "2026-10-15T11:30", "label": "Planning Pomodoro: plan checked, Done sentence signed off", "kind": "program" },
+      { "start": "2026-10-15T11:30", "end": "2026-10-15T12:00", "label": "Lightning shares: read your one-liner", "kind": "program" },
+      { "start": "2026-10-15T12:00", "end": "2026-10-15T13:30", "label": "Build Session 1: Foundation", "kind": "build", "session": 1 },
+      { "start": "2026-10-15T13:30", "end": "2026-10-15T14:30", "label": "Lunch", "kind": "break" },
+      { "start": "2026-10-15T14:30", "end": "2026-10-15T16:00", "label": "Build Session 2: Rough end to end", "kind": "build", "session": 2 },
+      { "start": "2026-10-15T16:00", "end": "2026-10-15T17:00", "label": "Room target: 50% done. Happy hour", "kind": "program" },
+      { "start": "2026-10-16T09:00", "end": "2026-10-16T09:15", "label": "Doors, coffee", "kind": "program" },
+      { "start": "2026-10-16T09:15", "end": "2026-10-16T09:30", "label": "Standup by table", "kind": "program" },
+      { "start": "2026-10-16T09:30", "end": "2026-10-16T13:30", "label": "Build Session 3: Make it real (working lunch)", "kind": "build", "session": 3 },
+      { "start": "2026-10-16T13:30", "end": "2026-10-16T14:00", "label": "Break. Demo kit check", "kind": "break" },
+      { "start": "2026-10-16T14:00", "end": "2026-10-16T14:45", "label": "Build Session 4: Ship. Stop at 2:30, rehearse, submit", "kind": "build", "session": 4 },
+      { "start": "2026-10-16T14:45", "end": "2026-10-16T15:00", "label": "Submissions close. Room votes", "kind": "deadline" },
+      { "start": "2026-10-16T15:00", "end": "2026-10-16T16:00", "label": "Demo Day: 6 demos, 10 min each", "kind": "program" },
+      { "start": "2026-10-16T16:00", "end": "2026-10-16T16:30", "label": "Awards", "kind": "program" },
+      { "start": "2026-10-16T16:30", "end": "2026-10-16T17:00", "label": "Networking, group photo, pack up", "kind": "program" }
+    ]
+  },
   "sessions": [
     { "n": 1, "label": "Thu 12:00–1:30", "start": "2026-10-15T12:00", "end": "2026-10-15T13:30", "goal": "Foundation: real quote data flowing in; Gmail drafts working once by hand.", "checkpoint": "I can see this week's open quotes in a sheet my build can read.", "status": "done", "minutesUsed": 85, "tokens": 310000, "checkpointHit": true, "closeNote": "Session 2 starts with T-03: one draft from one real quote." },
     { "n": 2, "label": "Thu 2:30–4:00", "start": "2026-10-15T14:30", "end": "2026-10-15T16:00", "goal": "Rough end to end: sheet in, one real draft out.", "checkpoint": "I ran it once start to finish and a real draft landed in Gmail.", "status": "done", "minutesUsed": 90, "tokens": 420000, "checkpointHit": true, "closeNote": "Friday starts with the stale-quote filter and the full sheet." },
@@ -302,7 +358,7 @@
     { "id": "T-04", "title": "Follow-up email template in Maria's voice", "detail": "Three past emails as examples; short, friendly, one ask.", "tier": "must", "status": "shipped", "session": 2, "humanHours": 2, "aiMinutes": 25, "risk": false, "discovered": "", "cutReason": "" },
     { "id": "T-05", "title": "Stale filter: only quotes older than 5 days with no reply", "detail": "Reads the 'last contact' column; skips anything marked won or lost.", "tier": "must", "status": "doing", "session": 3, "humanHours": 2.5, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
     { "id": "T-06", "title": "Run on the whole sheet (38 quotes)", "detail": "One draft per stale quote, nothing for the rest.", "tier": "must", "status": "session", "session": 3, "humanHours": 4, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
-    { "id": "T-07", "title": "Handle quotes with no email address", "detail": "Found mid-build: 6 rows have a phone number only. Draft a text instead, flag for Maria.", "tier": "should", "status": "session", "session": 3, "humanHours": 1.5, "aiMinutes": 0, "risk": false, "discovered": "S2", "cutReason": "" },
+    { "id": "T-07", "title": "Handle quotes with no email address", "detail": "Found mid-build: 6 rows have a phone number only. Draft a text instead, flag for Maria.", "tier": "should", "status": "session", "session": 3, "humanHours": 1.5, "aiMinutes": 0, "risk": false, "discovered": "S3", "cutReason": "" },
     { "id": "T-08", "title": "Morning run on its own at 7am", "detail": "Scheduled task so Maria opens Gmail to ready drafts.", "tier": "should", "status": "backlog", "session": 3, "humanHours": 3, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
     { "id": "T-09", "title": "Property lookup: pull the address and job type into the draft", "detail": "Reads the estimate PDF link in the sheet.", "tier": "stretch", "status": "backlog", "session": 4, "humanHours": 4, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
     { "id": "T-10", "title": "Weekly summary to Maria: how many followed up, how many replied", "detail": "", "tier": "stretch", "status": "cut", "session": 4, "humanHours": 3, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "Not needed for the demo; after the event." },
@@ -364,32 +420,51 @@
   ].join("");
 
   // ── Stats strip ────────────────────────────────────────────────────────
+  // The clock card reads the run of show (event.agenda): what block is on
+  // now, how long it has left, and how much build time the event still
+  // holds. Falls back to the sessions when there is no agenda.
+  const A = ((D.event || {}).agenda || []).map((x) => ({ ...x, s: new Date(x.start), e: new Date(x.end) })).sort((a, b2) => a.s - b2.s);
+  const NOW = new Date();
+  const fmtDur = (m) => (m >= 120 ? h1(m / 60) + "<small>h</small>" : Math.max(0, Math.round(m)) + "<small>min</small>");
+  const fmtWhen = (d) => d.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" });
+  const buildLeft = A.filter((x) => x.kind === "build" && x.e > NOW).reduce((acc, x) => acc + (x.e - Math.max(x.s, NOW)) / 60000, 0);
+  const current = A.find((x) => x.s <= NOW && NOW < x.e);
+  const next = A.find((x) => x.s > NOW);
+  const nextBuild = A.find((x) => x.kind === "build" && x.s > NOW);
   const active = S.find((s) => s.status === "active");
   const nextUp = S.find((s) => s.status === "planned");
   let nowCard;
-  if (active) {
-    const now = new Date(), st = new Date(active.start), en = new Date(active.end);
-    if (now < st) {
-      const until = Math.round((st - now) / 60000);
-      nowCard = { k: "Session " + active.n + " · next", v: (until > 180 ? Math.round(until / 60) + "<small>h to go</small>" : until + "<small>min to go</small>"), sub: active.label, now: true };
-    } else if (now > en) {
-      nowCard = { k: "Session " + active.n + " · over time", v: "Close<small>it</small>", sub: "Run the session close", now: true };
+  if (A.length) {
+    if (current) {
+      const left = (current.e - NOW) / 60000;
+      const isBuild = current.kind === "build";
+      nowCard = { k: (isBuild ? "Session " + current.session + " · live" : current.kind === "deadline" ? "Deadline" : "Now"), v: fmtDur(left) + "<small style='margin-left:6px'>left</small>", sub: current.label + (isBuild ? "" : nextBuild ? " · S" + nextBuild.session + " at " + nextBuild.s.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""), now: true };
+    } else if (next) {
+      const until = (next.s - NOW) / 60000;
+      nowCard = { k: until > 24 * 60 ? "Hackathon" : "Up next", v: until > 24 * 60 ? Math.ceil(until / 1440) + "<small>days to go</small>" : fmtDur(until) + "<small style='margin-left:6px'>to go</small>", sub: next.label + " · " + fmtWhen(next.s), now: until <= 24 * 60 };
     } else {
-      const left = Math.max(0, Math.round((en - now) / 60000));
-      nowCard = { k: "Session " + active.n + " · live", v: left + "<small>min left</small>", sub: active.label, now: true };
+      nowCard = { k: "Hackathon", v: "Done", sub: "Open the Report", now: false };
     }
+  } else if (active) {
+    const left = Math.max(0, Math.round((new Date(active.end) - NOW) / 60000));
+    nowCard = { k: "Session " + active.n + " · live", v: left + "<small>min left</small>", sub: active.label, now: true };
   } else if (nextUp) {
     nowCard = { k: "Next session", v: "S" + nextUp.n, sub: nextUp.label, now: false };
   } else {
     nowCard = { k: "Hackathon", v: "Done", sub: "See the report", now: false };
   }
+  const submitBy = (D.event || {}).submitBy ? new Date(D.event.submitBy) : null;
+  const buildLeftCard = submitBy && NOW < submitBy
+    ? { k: "Build time left", v: fmtDur(buildLeft), sub: "across the sessions still ahead · submit by " + submitBy.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) }
+    : null;
   const stats = [
     nowCard,
-    { k: "Shipped", v: shipped.length + "<small>of " + (T.length - cut.length) + "</small>", sub: cut.length ? cut.length + " cut" : "no cuts" },
+    buildLeftCard || { k: "Shipped", v: shipped.length + "<small>of " + (T.length - cut.length) + "</small>", sub: cut.length ? cut.length + " cut" : "no cuts" },
+    ...(buildLeftCard ? [{ k: "Shipped", v: shipped.length + "<small>of " + (T.length - cut.length) + "</small>", sub: cut.length ? cut.length + " cut" : "no cuts" }] : []),
     { k: "Human-hours shipped", v: h1(humanShipped) + "<small>h</small>", sub: "in " + mins(buildMinutes) + " of build time" },
     { k: "Compression", v: (compression ? h1(compression) : "–") + "<small>×</small>", sub: "human time ÷ your time" },
     { k: "Definition of done", v: (p.done || []).filter((d) => d.ok).length + "<small>of " + (p.done || []).length + "</small>", sub: "checks passing" },
-    { k: "Tokens", v: tokens ? (tokens >= 1e6 ? h1(tokens / 1e6) + "<small>M</small>" : Math.round(tokens / 1000) + "<small>k</small>") : "–", sub: "logged at session close" },
+    ...(buildLeftCard ? [] : [{ k: "Tokens", v: tokens ? (tokens >= 1e6 ? h1(tokens / 1e6) + "<small>M</small>" : Math.round(tokens / 1000) + "<small>k</small>") : "–", sub: "logged at session close" }]),
   ];
   $("#stats").innerHTML = stats.map((s) => '<div class="stat' + (s.now ? " now" : "") + '"><div class="k">' + esc(s.k) + '</div><div class="v">' + s.v + '</div><div class="sub">' + esc(s.sub) + "</div></div>").join("");
 
@@ -407,7 +482,7 @@
     '<div class="m"><span>' + esc(t.id) + '</span><span class="tier ' + esc(t.tier) + '">' + esc(t.tier) + "</span>" +
     (t.session ? "<span>S" + esc(t.session) + "</span>" : "") +
     (t.humanHours ? "<span>" + h1(t.humanHours) + "h human</span>" : "") +
-    (t.status === "shipped" && t.aiMinutes ? "<span>" + Math.round(t.aiMinutes) + " min with AI</span>" : "") +
+    (t.status === "shipped" && t.aiMinutes ? "<span>" + Math.round(t.aiMinutes) + " min with AI</span>" + (t.humanHours ? '<span class="x">' + h1((t.humanHours * 60) / t.aiMinutes) + "×</span>" : "") : "") +
     (t.risk ? '<span class="risk">riskiest unknown</span>' : "") +
     (t.discovered ? "<span>found " + esc(t.discovered) + "</span>" : "") +
     (t.status === "cut" && t.cutReason ? "<span>" + esc(t.cutReason) + "</span>" : "") +
@@ -448,7 +523,7 @@
   const pct = T.length ? Math.round((shipped.length / Math.max(1, T.length - cut.length)) * 100) : 0;
   $("#story").innerHTML = "<h2>What happened</h2>" +
     ((R.summary || []).length ? R.summary.map((x) => "<p>" + esc(x) + "</p>").join("") :
-      "<p>" + esc(b.name || "The builder") + " shipped <b>" + shipped.length + "</b> of " + (T.length - cut.length) + " tickets (" + pct + "%), work a capable person would need about <b>" + h1(humanShipped) + " hours</b> to do by hand, in <b>" + h1(buildHours) + " hours</b> of build time across " + S.filter((s) => s.status !== "planned").length + " sessions." + (cut.length ? " " + cut.length + " ticket" + (cut.length > 1 ? "s were" : " was") + " cut on purpose to protect the demo." : "") + "</p>" +
+      "<p>" + esc(b.name || "The builder") + " shipped <b>" + shipped.length + "</b> of " + (T.length - cut.length) + " tickets (" + pct + "%), work a capable person would need about <b>" + h1(humanShipped) + " hours</b> to do by hand, in <b>" + h1(buildHours) + " hours</b> of build time across " + S.filter((s) => s.status !== "planned").length + " sessions" + (tokens ? ", using about " + (tokens >= 1e6 ? h1(tokens / 1e6) + "M" : Math.round(tokens / 1000) + "k") + " tokens" : "") + "." + (cut.length ? " " + cut.length + " ticket" + (cut.length > 1 ? "s were" : " was") + " cut on purpose to protect the demo." : "") + "</p>" +
       '<p class="mono" style="color:var(--ink-mute);font-size:12px">Your AI writes the real story here at the end of Session 4.</p>') +
     '<div class="bar"><i style="width:' + pct + '%"></i></div><div class="kv"><span>Shipped</span><span class="mono">' + pct + "%</span></div>";
 
@@ -501,7 +576,51 @@
   paint();
   auto.addEventListener("click", () => { on = !on; try { localStorage.setItem("hb-auto", on ? "1" : "0"); } catch (e) {} paint(); if (on) setTimeout(() => location.reload(), 20000); });
   if (on) setTimeout(() => location.reload(), 20000);
-  $("#updated").textContent = "rendered " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  // ── Pomodoro ───────────────────────────────────────────────────────────
+  // State lives in localStorage so the auto-refresh reload does not reset
+  // it: { mode: minutes, endAt: ms epoch while running, left: ms while paused }.
+  const pomo = $("#pomo"), pTime = $("#pomoTime"), pGo = $("#pomoGo"), pReset = $("#pomoReset");
+  const modes = Array.from(pomo.querySelectorAll("[data-min]"));
+  const load = () => { try { return JSON.parse(localStorage.getItem("hb-pomo") || "null") || {}; } catch (e) { return {}; } };
+  const save = (st) => { try { localStorage.setItem("hb-pomo", JSON.stringify(st)); } catch (e) {} };
+  let P = load();
+  if (!P.mode) P = { mode: 25, left: 25 * 60000 };
+  const baseTitle = document.title;
+  const fmt = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
+  const remaining = () => (P.endAt ? P.endAt - Date.now() : P.left);
+  let chimed = false;
+  const chime = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.18, 0.36].forEach((t, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i === 2 ? 880 : 660; o.connect(g); g.connect(ctx.destination); g.gain.setValueAtTime(0.0001, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.16); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.18); });
+    } catch (e) {}
+  };
+  const paintPomo = () => {
+    const r = remaining();
+    pTime.textContent = fmt(r);
+    const running = !!P.endAt && r > 0;
+    const done = !!P.endAt && r <= 0;
+    pomo.classList.toggle("running", running);
+    pomo.classList.toggle("done", done);
+    pGo.textContent = running ? "❚❚" : "▶";
+    pGo.setAttribute("aria-label", running ? "Pause" : "Start");
+    modes.forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.min) === P.mode ? "true" : "false"));
+    document.title = running ? fmt(r) + " · " + baseTitle : done ? "Time · " + baseTitle : baseTitle;
+    if (done && !chimed) { chimed = true; chime(); }
+  };
+  pGo.addEventListener("click", () => {
+    const r = remaining();
+    if (P.endAt && r > 0) { P = { mode: P.mode, left: r }; }            // pause
+    else if (P.endAt && r <= 0) { const nextMode = P.mode === 25 ? 5 : 25; P = { mode: nextMode, endAt: Date.now() + nextMode * 60000 }; chimed = false; } // restart after done
+    else { P = { mode: P.mode, endAt: Date.now() + (P.left || P.mode * 60000) }; }                             // start / resume
+    save(P); paintPomo();
+  });
+  pReset.addEventListener("click", () => { P = { mode: P.mode, left: P.mode * 60000 }; chimed = false; save(P); paintPomo(); });
+  modes.forEach((b) => b.addEventListener("click", () => { P = { mode: Number(b.dataset.min), left: Number(b.dataset.min) * 60000 }; chimed = false; save(P); paintPomo(); }));
+  paintPomo();
+  setInterval(paintPomo, 500);
+  // Pomodoro is a per-viewer convenience; a blocked localStorage just means
+  // the timer resets on reload, which the page already survives everywhere else.
 })();
 </script>
 </body>

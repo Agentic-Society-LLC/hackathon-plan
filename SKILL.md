@@ -26,14 +26,16 @@ All dates, times, and lengths for this event live in this block. To reuse the sk
 
 - **When:** Thursday Oct 15 and Friday Oct 16, 2026, doors 8:00, 9am to 5pm CT, in person in Austin. Out of the venue by 5:00 both days.
 - **Plan due:** submission card sent by **Monday Oct 12** as a reply to Austin's prep email (the one with the prep guide link), so seating by level is done Oct 13.
-- **Thursday before building:** 10:00 opening, 10:45 seating by level, 11:00 Planning Pomodoro (a facilitator checks your plan), 11:30 lightning shares (you read your one-liner out loud).
+- **Thursday before building:** 8:00 doors and breakfast, 10:00 opening, 10:45 seating by level, 11:00 Planning Pomodoro (25 minutes; a facilitator checks your plan and signs off your Done sentence), 11:30 lightning shares (you read your one-liner out loud). Thursday's goal for the room: a signed-off Done sentence by 11:30 and 50% done by 4:00.
+- **Friday before building:** 9:00 doors (coffee only), 9:15 standup by table (whoever did not get a rough version working Thursday gets the first help), 9:30 Session 3 starts.
 - **Build sessions:**
   - **Session 1:** Thu 12:00-1:30 (90 min)
   - **Session 2:** Thu 2:30-4:00 (90 min). The room target is 50% done by 4:00.
   - **Session 3:** Fri 9:30-1:30 (4 hours with a working lunch, so about 3.5 hours of real build). Checkpoint at 11:30: cut to the smallest Done if you are behind.
   - **Session 4:** Fri 2:00-2:45 (45 min). Submissions close at 2:45.
   - That is **about 7 hours of real build time in total.** Size everything against 7 hours, not two days.
-- **Finish:** Friday 3:00 is Demo Day: six opt-in demos, 10 minutes each, on the big screen. You must have a functional build to enter. Everyone else shows their build at their table. Awards at 4:00 (trophies, Meta Ray-Bans, AirPods Pro, People's Choice). Every builder shows a working thing to someone.
+- **Submitting (Fri 2:00 to 2:45):** the submission is **one paragraph about what you built**, posted to the live board from your phone, before 2:45. It must be functional to enter a demo slot. At 2:45 the room votes on phones (5 votes each); the six most-voted builds that opted in demo on the big screen.
+- **Finish:** Friday 3:00 is Demo Day: six opt-in demos, 10 minutes each, hard timer. Everyone else shows their build at their table. Judges pick the top prize from the six on "best AI outcome, coolest build"; People's Choice is the highest vote total. Awards at 4:00 (trophies, Meta Ray-Bans, AirPods Pro, People's Choice); networking and group photo 4:30; out of the venue 5:00. Every builder shows a working thing to someone.
 - **Who is in the room:** mostly business owners applying AI to an existing business (service businesses, brick and mortar, B2B, agencies), not software founders. Many are not developers. They build with Claude Code, Claude Cowork, Codex, or Hermes.
 - **Plans are due before the event.** Planning happens in prep week. Event days are for building. Your plan feeds three moments: your **one-liner** is what you read at the 11:30 lightning share, your **Done sentence** goes on the Done Wall where the whole room tracks it, and your **demo moment** is what you show on Friday.
 
@@ -252,7 +254,28 @@ Every builder gets one file: **`hackathon/board.html`**, in the folder they are 
 
 **Where the template comes from.** Copy `assets/board.html` from this skill's folder to `hackathon/board.html`. If you cannot see the skill folder, fetch it: `https://raw.githubusercontent.com/Agentic-Society-LLC/hackathon-plan/main/assets/board.html`. If you cannot write files at all (a chat-only tool), render the same board as an HTML artifact and re-render it on every update; tell the builder it will be a real file once they are in Claude Code, Cowork or Codex.
 
-**The one rule.** You edit **only** the JSON inside `<script id="hackathon-data">`. Never touch the markup or the script below it. Keep every key. The schema is documented in a comment right above that block in the file; read it the first time. Set `"sample": false` the moment the data is the builder's.
+**The one rule.** You edit **only** the JSON inside `<script id="hackathon-data">`. Never touch the markup or the script below it. Keep every key. Edit the block in place (a targeted edit of the JSON), never rewrite the whole file: it is 50 KB and you will be updating it thirty times a day. Set `"sample": false` the moment the data is the builder's.
+
+**The data, in one glance** (the full comment sits above the block in the file):
+
+```
+sample     true until the data is the builder's
+event      the run of show, times only: agenda[] {start, end, label, kind: program|build|break|deadline, session}, submitBy.
+           Do not edit for this hackathon; edit only to reuse the board for another event.
+builder    name, business, level (1-3), tools[]
+project    oneLiner, category, doneWall (12 words or fewer), demoMoment, done[] {text, ok}
+sessions   4 × {n, label, start, end, goal, checkpoint, status: planned|active|done,
+           minutesUsed, tokens, checkpointHit: null|true|false, closeNote}
+cutLine    one sentence: what gets cut if the Fri 11:30 checkpoint is missed
+tickets    {id "T-01"…, title, detail, tier: must|should|stretch|prep,
+           status: backlog|session|doing|shipped|cut, session 1-4,
+           humanHours (set at creation, never edited), aiMinutes (when shipped),
+           risk (true on the riskiest unknown), discovered ("S2" if found mid-build, else ""), cutReason}
+log        {at "Thu 12:40", what}, newest last
+report     summary[] (paragraphs), nextSteps[], manualHoursNote
+```
+
+**The clock.** The board's top-right card reads the run of show: what block is on now, minutes left in it, and total build time still ahead of the event. The Pomodoro timer sits beside it (25 build / 5 look at the board). **In Build mode, every reply you write starts with a one-line clock**, read from the board or the schedule above: `S3 · 48 min left in session · 2h 10m build time left in the event · 5 of 10 shipped`. The builder should never have to ask what time it is.
 
 **What goes on the board**
 - Everything the builder will do is a **ticket**. Not a note, not a thought: a ticket, with a title a stranger could understand.
@@ -296,7 +319,9 @@ If the board does not exist, create it from the plan now: builder, project, the 
 4. Start on the first ticket. Move it to `doing`.
 
 ### While building
+- **Work in pomodoros.** 25 minutes on the ticket, then 5 minutes looking at the board together: is the ticket done, what moved, what got discovered, is the session still on track. A 90-minute session is three pomodoros. Start the timer (top right of the board) at the top of each one.
 - One ticket at a time. Move it to `doing` when you start, `shipped` when its "done" is true, with `aiMinutes` = the real wall-clock minutes it took. Add a `log` line when something real ships.
+- **The first time it works end to end**, write the log line with the clock time and what actually came out ("Thu 3:20: first real follow-up drafted for the Hernandez quote, $4,200"). That line is the opening sentence of Friday's report and the thing the builder tells people at dinner. Do not let it pass unrecorded.
 - Found new work? Add a ticket (`discovered`), tier it honestly, put it in `backlog`, and keep going on the current ticket. Do not silently absorb it.
 - A definition-of-done check now passes? Set its `ok: true`. These three to five checks are the demo; watch them turn green.
 - Stuck for more than 20 minutes on one ticket? Say so. Options: split it, swap it for the next `must`, or move the hard part to a `should`. Decide in two minutes, not twenty more.
@@ -310,7 +335,10 @@ If the board does not exist, create it from the plan now: builder, project, the 
 5. Say the room score in one line: tickets shipped, human-hours shipped, checkpoint hit or missed.
 
 ### Session 4 (Fri 2:00 to 2:45)
-Build until **2:30**, then stop building no matter what. Rehearse the 3-minute demo once against the definition-of-done checks. Submit by 2:45. Then run Report mode.
+Build until **2:30**, then stop building no matter what. Then, in this order:
+1. **Draft the submission paragraph** from the board, 60 to 90 words, in the builder's words: the one-liner, what works right now (the passing done checks, with a real number from the data), and the demo moment. No tool names unless the tool is the point. The builder posts it to the live board from their phone before **2:45**.
+2. Rehearse the 3-minute demo once against the definition-of-done checks.
+3. Submit by 2:45. Then run Report mode.
 
 ## Report mode
 
