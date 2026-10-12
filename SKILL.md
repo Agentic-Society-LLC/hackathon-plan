@@ -34,7 +34,7 @@ All dates, times, and lengths for this event live in this block. To reuse the sk
   - **Session 3:** Fri 9:30-1:30 (4 hours with a working lunch, so about 3.5 hours of real build). Checkpoint at 11:30: cut to the smallest Done if you are behind.
   - **Session 4:** Fri 2:00-2:45 (45 min). Submissions close at 2:45.
   - That is **about 7 hours of real build time in total.** Size everything against 7 hours, not two days.
-- **Submitting (Fri 2:00 to 2:45):** the submission is **one paragraph about what you built**, posted to the live board from your phone, before 2:45. It must be functional to enter a demo slot. At 2:45 the room votes on phones (5 votes each); the six most-voted builds that opted in demo on the big screen.
+- **Submitting (Fri 2:00 to 2:45):** the submission is **one paragraph about what you built, 280 characters at most** (the live board refuses anything longer), posted to the live board from your phone, before 2:45. Your build board carries it: at 2:30 the AI writes it into the board, and the board's **Submit to the live board** card has a QR that opens the live board on your phone with your text and name already filled in. It must be functional to enter a demo slot. At 2:45 the room votes on phones (5 votes each); the six most-voted builds that opted in demo on the big screen.
 - **Finish:** Friday 3:00 is Demo Day: six opt-in demos, 10 minutes each, hard timer. Everyone else shows their build at their table. Judges pick the top prize from the six on "best AI outcome, coolest build"; People's Choice is the highest vote total. Awards at 4:00 (trophies, Meta Ray-Bans, AirPods Pro, People's Choice); networking and group photo 4:30; out of the venue 5:00. Every builder shows a working thing to someone.
 - **Who is in the room:** mostly business owners applying AI to an existing business (service businesses, brick and mortar, B2B, agencies), not software founders. Many are not developers. They build with Claude Code, Claude Cowork, Codex, or Hermes.
 - **Plans are due before the event.** Planning happens in prep week. Event days are for building. Your plan feeds three moments: your **one-liner** is what you read at the 11:30 lightning share, your **Done sentence** goes on the Done Wall where the whole room tracks it, and your **demo moment** is what you show on Friday.
@@ -260,10 +260,11 @@ Every builder gets one file: **`hackathon/board.html`**, in the folder they are 
 
 ```
 sample     true until the data is the builder's
-event      the run of show, times only: agenda[] {start, end, label, kind: program|build|break|deadline, session}, submitBy.
+event      the run of show, times only: agenda[] {start, end, label, kind: program|build|break|deadline, session}, submitBy, boardUrl.
            Do not edit for this hackathon; edit only to reuse the board for another event.
 builder    name, business, level (1-3), tools[]
-project    oneLiner, category, doneWall (12 words or fewer), demoMoment, done[] {text, ok}
+project    oneLiner, category, doneWall (12 words or fewer), demoMoment, done[] {text, ok},
+           submission ("" until Fri 2:30; then the live-board card, ONE paragraph, 280 characters max)
 sessions   4 × {n, label, start, end, goal, checkpoint, status: planned|active|done,
            minutesUsed, tokens, checkpointHit: null|true|false, closeNote}
 cutLine    one sentence: what gets cut if the Fri 11:30 checkpoint is missed
@@ -336,9 +337,10 @@ If the board does not exist, create it from the plan now: builder, project, the 
 
 ### Session 4 (Fri 2:00 to 2:45)
 Build until **2:30**, then stop building no matter what. Then, in this order:
-1. **Draft the submission paragraph** from the board, 60 to 90 words, in the builder's words: the one-liner, what works right now (the passing done checks, with a real number from the data), and the demo moment. No tool names unless the tool is the point. The builder posts it to the live board from their phone before **2:45**.
-2. Rehearse the 3-minute demo once against the definition-of-done checks.
-3. Submit by 2:45. Then run Report mode.
+1. **Write the submission into the board.** One paragraph, **280 characters or fewer** (aim for 230 to 270; the live board refuses anything longer, so count, do not guess). In the builder's words: what they built and for whom, what works right now (a passing done check, with a real number from the data), and the demo moment. No tool names unless the tool is the point. Show it to the builder, revise once if they want, then set `project.submission` to the final text. The board now shows a **Submit to the live board** card with the text, its character count, and a QR code. If the count shows it is over 280, trim it before anything else.
+2. **Hand it off.** Tell the builder, word for word: "Open your build board. Scan the QR on the Submit card with your phone. It opens the live board with your text and name filled in: add your email, check the text, tap Post. Before 2:45." No phone camera? **Copy text** on the card, then paste it at agenticsociety.com/live/2026-10-16.
+3. Rehearse the 3-minute demo once against the definition-of-done checks.
+4. Confirm it is posted by 2:45 (it shows on the room's screen). Then run Report mode.
 
 ## Report mode
 
@@ -348,6 +350,6 @@ The board's Report view computes the numbers from the data: tickets created, shi
 2. Write `report.summary`: two to four short paragraphs, in plain words, for the builder to read on Friday night and to show their team on Monday. What they set out to do, what shipped, the moment it first worked, what was cut and why, and what the numbers mean for them ("this is a Tuesday morning you get back every week"). No hype. Quote the real numbers from the board.
 3. Write `report.nextSteps`: three to six concrete next moves to take the open tickets live after the event, in order, with the first one small enough to do Monday.
 4. Write `report.manualHoursNote` only if the builder's estimates need a caveat the reader should know (for example, "estimates assume Maria does the data export herself").
-5. Tell the builder: open the board, click **Report**, then **Copy report as text** for the demo card, Slack, or their team, and **Print / save as PDF** to keep it.
+5. Tell the builder: open the board, click **Report**, then **Copy report as text** for the demo card, Slack, or their team (it leads with their live-board submission), and **Print / save as PDF** to keep it.
 
 If the thing did not ship: the report still runs. "What remains" becomes the honest scope-of-work estimate for finishing it, and the summary says what was learned and what the next concrete step is. A clear unfinished report beats a vague finished one.

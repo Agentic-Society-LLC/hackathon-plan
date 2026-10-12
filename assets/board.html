@@ -109,6 +109,23 @@
   .sample { margin: 10px 0 0; font-size: 13px; color: var(--ink-3); }
   .sample code { font-family: var(--mono); font-size: 12px; }
 
+  /* Submit handoff: the 2:30 card. Text + copy on the left, the phone QR on the
+     right. The QR sits on white in both themes so every phone camera reads it. */
+  .handoff { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; margin: 0 0 36px; padding: 24px 28px; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); border: 1px solid var(--accent); }
+  .handoff[hidden] { display: none; }
+  .handoff__k { margin: 0 0 10px; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+  .handoff__k span { color: var(--ink-3); letter-spacing: 0; text-transform: none; font-weight: 400; margin-left: 6px; }
+  .handoff blockquote { margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink); max-width: 62ch; }
+  .handoff__count { margin: 10px 0 0; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .handoff__count.over { color: var(--warn); }
+  .handoff__acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .handoff__acts a.btn { text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; }
+  .handoff__qr { margin: 0; display: grid; justify-items: center; gap: 10px; }
+  .handoff__qr .code { width: 188px; height: 188px; padding: 10px; border-radius: 14px; background: #fff; display: grid; place-items: center; }
+  .handoff__qr .code svg { width: 100%; height: 100%; display: block; }
+  .handoff__qr figcaption { font-size: 12.5px; color: var(--ink-2); text-align: center; max-width: 188px; line-height: 1.4; }
+  @media (max-width: 720px) { .handoff { grid-template-columns: 1fr; } .handoff__qr { justify-items: start; } }
+
   /* Numbers row: four figures, thin dividers, no boxes */
   .nums { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 0 36px; }
   .num { padding: 20px 20px 20px 0; border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; }
@@ -215,7 +232,7 @@
   }
   @media print {
     :root { --bg: #fff; --surface: #fff; --surface-2: #f4f4f4; --ink: #111; --ink-2: #444; --ink-3: #777; --line: #ddd; --line-2: #bbb; --shadow: none; }
-    .top, .sample, .actions, .foot { display: none !important; }
+    .top, .sample, .actions, .foot, .handoff__acts, .handoff__qr { display: none !important; }
     .wrap { padding: 0; }
     .row.now { background: none; }
   }
@@ -259,6 +276,22 @@
     <p id="sample" class="sample" hidden>Sample data. Run <code>/hackathon-plan</code> and your AI replaces it with your project.</p>
   </section>
 
+  <section class="handoff" id="handoff" hidden aria-labelledby="ho-k">
+    <div>
+      <p class="handoff__k" id="ho-k">Submit to the live board<span id="ho-due"></span></p>
+      <blockquote id="ho-text"></blockquote>
+      <p class="handoff__count" id="ho-count"></p>
+      <div class="handoff__acts">
+        <button class="btn primary" id="ho-copy" type="button">Copy text</button>
+        <a class="btn" id="ho-open" target="_blank" rel="noopener">Open the live board ↗</a>
+      </div>
+    </div>
+    <figure class="handoff__qr">
+      <div class="code" id="ho-qr" role="img" aria-label="QR code: opens the live board on your phone with this text filled in"></div>
+      <figcaption>Scan with your phone. Add your email, check the text, tap Post.</figcaption>
+    </figure>
+  </section>
+
   <div class="nums" id="stats"></div>
 
   <section class="view" id="view-board">
@@ -299,11 +332,15 @@
 
   event     the run of show, times only: agenda[] = {start, end, label,
             kind: program | build | break | deadline, session (for build
-            blocks)} and submitBy. The clock card and "build time left" read
-            it. Edit only to reuse the board for a different event.
+            blocks)}, submitBy, and boardUrl (the live board the Submit card's
+            QR opens). The clock card and "build time left" read it. Edit
+            only to reuse the board for a different event.
   builder   name, business, level (1-3), tools[]
   project   oneLiner, category, doneWall (12 words or fewer), demoMoment,
-            done[] = {text, ok}  the definition-of-done checks, ticked live
+            done[] = {text, ok}  the definition-of-done checks, ticked live,
+            submission  the live-board card, written at 2:30 Friday. ONE
+            paragraph, 280 characters MAX (the board refuses longer). "" until
+            then; once set, the page shows the Submit card with a QR.
   sessions  four fixed sessions. status: planned | active | done.
             start/end are local ISO times (the clock and countdown use them).
             minutesUsed + tokens are filled at session close; checkpointHit
@@ -337,12 +374,14 @@
       { "text": "Paste a sheet of open quotes; within 2 minutes a draft appears in Gmail for each one older than 5 days", "ok": false },
       { "text": "Each draft names the customer, the property and the quote amount from the sheet", "ok": true },
       { "text": "Nothing sends without Maria clicking Send", "ok": true }
-    ]
+    ],
+    "submission": "Built a quote follow-up agent for Lone Star Landscaping. It reads our open-quotes sheet and drafts a Gmail follow-up for every quote older than 5 days, naming the property and amount. Ran it on 38 real quotes: 12 drafts ready to approve. Nothing sends without me."
   },
   "event": {
     "name": "2-Day AI Hackathon",
     "timezone": "America/Chicago",
     "submitBy": "2026-10-16T14:45",
+    "boardUrl": "https://agenticsociety.com/live/2026-10-16",
     "agenda": [
       { "start": "2026-10-15T08:00", "end": "2026-10-15T10:00", "label": "Doors, check-in, breakfast", "kind": "program" },
       { "start": "2026-10-15T10:00", "end": "2026-10-15T10:45", "label": "Opening remarks", "kind": "program" },
@@ -456,6 +495,50 @@
     (b.tools || []).length ? "<span>" + esc(b.tools.join(", ")) + "</span>" : "",
   ].filter(Boolean).join("");
 
+  // ── Submit handoff: board.html → phone → live board ───────────────────
+  // The link carries the text in the #fragment, which phones never send to a
+  // server; the live board reads it into the compose box and fills the name.
+  const sub = String(p.submission || "").trim();
+  const LIMIT = 280;
+  if (sub) {
+    const ev = D.event || {};
+    const boardUrl = ev.boardUrl || "https://agenticsociety.com/live/2026-10-16";
+    const link = boardUrl + "#" + new URLSearchParams({ name: b.name || "", draft: sub }).toString();
+    const n = Array.from(sub).length;
+    $("#handoff").hidden = false;
+    $("#ho-text").textContent = sub;
+    $("#ho-due").textContent = ev.submitBy ? "· due " + tm(new Date(ev.submitBy)) + " Friday" : "";
+    const cnt = $("#ho-count");
+    cnt.textContent = n + " / " + LIMIT + " characters" + (n > LIMIT ? ". Too long for the board: ask your AI to trim it." : "");
+    cnt.classList.toggle("over", n > LIMIT);
+    $("#ho-open").href = link;
+    $("#ho-copy").addEventListener("click", async () => {
+      const btn = $("#ho-copy");
+      try { await navigator.clipboard.writeText(sub); btn.textContent = "Copied"; } catch (e) { prompt("Copy your submission:", sub); }
+      setTimeout(() => (btn.textContent = "Copy text"), 1500);
+    });
+    // QR: drawn from the library's module grid as one SVG path, so it is crisp
+    // at any size. Offline? The card still has Copy and the link.
+    const drawQr = () => {
+      try {
+        const qr = window.qrcode(0, "L"); qr.addData(link); qr.make();
+        const m = qr.getModuleCount(); let d = "";
+        for (let r = 0; r < m; r++) for (let c = 0; c < m; c++) if (qr.isDark(r, c)) d += "M" + c + " " + r + "h1v1h-1z";
+        $("#ho-qr").innerHTML = '<svg viewBox="0 0 ' + m + " " + m + '" shape-rendering="crispEdges" aria-hidden="true"><path d="' + d + '" fill="#000"/></svg>';
+      } catch (e) { $(".handoff__qr").hidden = true; }
+    };
+    if (window.qrcode) drawQr();
+    else {
+      const sc = document.createElement("script");
+      sc.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+      sc.integrity = "sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k";
+      sc.crossOrigin = "anonymous";
+      sc.onload = drawQr;
+      sc.onerror = () => { $(".handoff__qr").hidden = true; };
+      document.head.appendChild(sc);
+    }
+  }
+
   // ── Clock from the run of show ────────────────────────────────────────
   const A = ((D.event || {}).agenda || []).map((x) => ({ ...x, s: new Date(x.start), e: new Date(x.end) })).sort((a, c) => a.s - c.s);
   const dur = (m) => (m >= 120 ? h1(m / 60) + "<small>h</small>" : Math.max(0, Math.round(m)) + "<small>min</small>");
@@ -556,6 +639,7 @@
   $("#copyreport").addEventListener("click", async () => {
     const lines = [
       "HACKATHON REPORT · " + [b.name, b.business].filter(Boolean).join(", "), p.oneLiner || "", "",
+      ...(sub ? ["LIVE BOARD SUBMISSION", sub, ""] : []),
       "Shipped " + shipped.length + " of " + planned + " tickets (" + pct + "%).",
       "Work shipped: ~" + h1(humanShipped) + " human-hours, in " + h1(buildHours) + " hours of build time (" + (compression ? h1(compression) + "x" : "n/a") + ").",
       tokens ? "Tokens: ~" + tokStr + "." : "", "",
