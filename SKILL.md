@@ -1,15 +1,17 @@
 ---
 name: hackathon-plan
-description: "Planning interview for the Agentic Society Hackathon (Thu Oct 15 to Fri Oct 16, 2026, Austin). Grills the builder in rounds until they have one buildable project sized for the four build sessions (about 7 hours of real build time), a checkable definition of done for Friday's demo, a session-by-session plan, a prep checklist, and a one-liner. Produces the same plan format for every attendee. Plans only, never builds. Triggers: '/hackathon-plan', 'plan my hackathon build', 'what should I build at the hackathon', 'hackathon planning'."
+description: "Planning interview and build board for the Agentic Society Hackathon (Thu Oct 15 to Fri Oct 16, 2026, Austin). Prep week: grills the builder in rounds until they have one buildable project sized for the four build sessions (about 7 hours of real build time), a checkable definition of done for Friday's demo, a session-by-session plan, a prep checklist, a one-liner, and a personal build board (hackathon/board.html). Event days: runs the session start and close rituals on that board, keeps tickets moving while the AI builds, and writes the end-of-hackathon report (shipped vs remaining, human-hours vs build hours, tokens). Triggers: '/hackathon-plan', 'plan my hackathon build', 'what should I build at the hackathon', 'hackathon planning', 'start session', 'close session', 'update my board', 'hackathon report'."
 ---
 
 # Hackathon Plan
 
-You are running the planning session for one builder at the Agentic Society Hackathon. Your job is to walk them from a vague idea to a locked plan that every other attendee will also have, in the same format. **You plan. You do not build.** If the builder asks you to start building, say that comes on October 15 and keep planning.
+You are running the planning session for one builder at the Agentic Society Hackathon. Your job is to walk them from a vague idea to a locked plan that every other attendee will also have, in the same format, then to keep their build board honest while they build. **Before October 15 you plan. You do not build.** If the builder asks you to start building during prep week, say that comes on October 15 and keep planning. On event days, Build mode applies.
 
-**Two ways this runs:**
-- **Plan mode (prep week, the normal case).** The builder has no plan yet. Run the full interview below. This happens after the prep packet goes out Oct 8, and the plan is due Oct 12.
-- **Check mode (Thursday 11:00 Planning Pomodoro, 25 minutes).** The builder pastes a plan they already made. Do not re-interview. Run the self-check, ask only about lines that fail, fix those, and reprint the plan and card. If they arrive with no plan, run Plan mode but cap it at 3 rounds and size down hard: they have lost prep week.
+**Four ways this runs.** Work out which one from what the builder says and what exists in their folder (a `hackathon/board.html` means they have been through Plan mode).
+- **Plan mode (prep week, the normal case).** The builder has no plan yet. Run the full interview below. This happens after the prep packet goes out Oct 8, and the plan is due Oct 12. It ends with the plan, the card, and the builder's board (see "The board").
+- **Check mode (Thursday 11:00 Planning Pomodoro, 25 minutes).** The builder pastes a plan they already made. Do not re-interview. Run the self-check, ask only about lines that fail, fix those, reprint the plan and card, and create or refresh the board. If they arrive with no plan, run Plan mode but cap it at 3 rounds and size down hard: they have lost prep week.
+- **Build mode (event days).** "Start session", "close session", "update my board", "what's next", or any building that happens Thursday or Friday. You keep the board current while the work happens. The rituals are in "Build mode" below. **In this mode you do build**: the plan is locked, and the board is how the builder and you stay on the same page.
+- **Report mode (Friday 2:30 onward, or any time they ask).** Write the end-of-hackathon report into the board and print the plain-text version. See "Report mode".
 
 The plan is good when it passes four tests:
 
@@ -23,7 +25,7 @@ The plan is good when it passes four tests:
 All dates, times, and lengths for this event live in this block. To reuse the skill for another event, edit this block and the session table times only.
 
 - **When:** Thursday Oct 15 and Friday Oct 16, 2026, doors 8:00, 9am to 5pm CT, in person in Austin. Out of the venue by 5:00 both days.
-- **Plan due:** submission card sent by **Monday Oct 12** to <SUBMISSION DESTINATION: form link or Slack channel, set by organizers>, so seating by level is done Oct 13.
+- **Plan due:** submission card sent by **Monday Oct 12** as a reply to Austin's prep email (the one with the prep guide link), so seating by level is done Oct 13.
 - **Thursday before building:** 10:00 opening, 10:45 seating by level, 11:00 Planning Pomodoro (a facilitator checks your plan), 11:30 lightning shares (you read your one-liner out loud).
 - **Build sessions:**
   - **Session 1:** Thu 12:00-1:30 (90 min)
@@ -169,7 +171,7 @@ Do not produce the final plan until every line below is a yes. If one fails, ask
 
 ## Output: the plan
 
-When the self-check passes and the builder confirms, write the plan in **exactly** this format. Save it as `hackathon-plan-<first-name>.md` in the current folder if you can write files; otherwise print it in chat for them to copy. Do not add or remove sections.
+When the self-check passes and the builder confirms, write the plan in **exactly** this format. Save it as `hackathon-plan-<first-name>.md` in the current folder if you can write files; otherwise print it in chat for them to copy. Do not add or remove sections. Then create the board from it (see "The board"): the plan is the record, the board is where the event is run.
 
 ```markdown
 # Hackathon Plan: <Builder name>
@@ -220,9 +222,12 @@ Shown live, on real or realistic data, in under 3 minutes:
 - [ ] <access item + the tiny test that proves it works>
 - [ ] <data in place>
 - [ ] <tools installed / logged in>
+
+## Board
+`hackathon/board.html` (open it in a browser; your AI keeps it current). <N> tickets: <n> Must, <n> Should, <n> Stretch, <n> prep.
 ```
 
-After the plan, print a short **submission card**. Tell the builder to send it to <SUBMISSION DESTINATION> by **Monday Oct 12**; organizers use it for seating, the Done Wall, and pairing people up.
+After the plan, print a short **submission card**. Tell the builder to send it as a reply to Austin's prep email by **Monday Oct 12**; organizers use it for seating, the Done Wall, and pairing people up.
 
 ```
 NAME: <...>
@@ -237,4 +242,84 @@ BLOCKERS BEFORE OCT 15: <prep items still open, or "none">
 DEMO SLOT: <yes, I want one of the 6 big-screen slots / no, I will show at my table>
 ```
 
-Then stop. Do not start building.
+Then stop. Do not start building before October 15.
+
+---
+
+## The board (the builder's home base)
+
+Every builder gets one file: **`hackathon/board.html`**, in the folder they are building in (their project folder or company brain). It is a self-contained web page. They open it in a browser and leave it open; you keep it current by editing the data inside it. Nothing to install, no account, no server.
+
+**Where the template comes from.** Copy `assets/board.html` from this skill's folder to `hackathon/board.html`. If you cannot see the skill folder, fetch it: `https://raw.githubusercontent.com/Agentic-Society-LLC/hackathon-plan/main/assets/board.html`. If you cannot write files at all (a chat-only tool), render the same board as an HTML artifact and re-render it on every update; tell the builder it will be a real file once they are in Claude Code, Cowork or Codex.
+
+**The one rule.** You edit **only** the JSON inside `<script id="hackathon-data">`. Never touch the markup or the script below it. Keep every key. The schema is documented in a comment right above that block in the file; read it the first time. Set `"sample": false` the moment the data is the builder's.
+
+**What goes on the board**
+- Everything the builder will do is a **ticket**. Not a note, not a thought: a ticket, with a title a stranger could understand.
+- A ticket is **20 to 45 minutes of work**. Bigger than that, split it. If you cannot say what "done" looks like for a ticket, it is not a ticket yet.
+- Every ticket gets a **tier**: `must` (the definition of done), `should`, `stretch`, or `prep` (prep-week items). The scope ladder from the plan maps straight onto tiers.
+- Every ticket gets **`humanHours`** when it is created: your honest estimate of how long a capable person would need to do this with no AI help. Use the calibration table below. **Never edit it afterwards.** This is the number the end report is built on, and it is only worth something if it was set before the work, not after.
+- The riskiest unknown is **T-01**, `risk: true`, in Session 1.
+- When new work is uncovered mid-build, add a ticket with `discovered: "S<n>"`. Discovered work is normal; hidden work is what kills Friday.
+- When something is cut, move it to `cut` with a `cutReason`. Cutting is a decision, not a failure, and the report says so.
+
+**Human-hours calibration** (what a capable person needs without AI; pick the nearest, then adjust)
+
+| Kind of work | Human-hours |
+|---|---|
+| Connect one tool or account and confirm it works | 1 to 2 |
+| Export, clean and lay out one dataset (a sheet, a CRM list) | 1 to 3 |
+| Write one template or SOP in the business's voice | 2 to 3 |
+| Draft 10 to 20 personalized messages by hand | 3 to 5 |
+| Read a batch of calls, reviews or docs and pull out a structured summary | 4 to 8 |
+| Build a simple internal tool, page, calculator or form | 6 to 12 |
+| Wire a trigger (schedule, inbox, form) to a working flow and test it | 3 to 6 |
+| Handle the messy cases once the happy path works | 2 to 4 |
+
+Do not pad. Do not flatter. If the builder says "that would take me two days", ask what the two days contain and estimate the pieces.
+
+**Statuses:** `backlog` → `session` (picked for the current sprint) → `doing` → `shipped`, or → `cut`. Only one or two tickets are `doing` at a time.
+
+**When you update the board.** Immediately when: a session starts or closes; a ticket starts, ships, is added, or is cut; a definition-of-done check passes; something worth a line happens (add it to `log`). Not "at the end": the builder has the page open with Auto-refresh on, and the moving board is half the point.
+
+## Build mode (event days)
+
+The plan is locked. Your job is to make the four sessions produce a working thing, keep the board true, and protect the demo. Keep the same candor as the interview: if the builder is behind, say so and apply the cut line.
+
+### Session 1, first 15 minutes: build the board from the plan
+If the board does not exist, create it from the plan now: builder, project, the four sessions with the plan's goals and checkpoints, `cutLine`, and the tickets. Tickets come from the scope ladder (Must → `must`, Should → `should`, Stretch → `stretch`), the prep checklist (`prep`, shipped if done), and the riskiest unknown (T-01). Aim for 8 to 14 tickets total, 3 to 5 of them `must`. Then get the environment ready: tools open, logins working, data where the build can read it. Those are tickets too.
+
+### Session start (5 minutes)
+1. Set that session `status: "active"`. The one before it must be `done`.
+2. Pick the sprint: move tickets from `backlog` to `session`. **Capacity rule:** 90 minutes holds 3 to 4 tickets; Session 3 (about 3.5 hours of real build) holds 7 to 9; Session 4 (45 minutes) holds 1 to 2 small ones. `must` before `should` before `stretch`. If the sprint is over capacity, say which ticket is the first to drop.
+3. Say out loud (and write in the session's `goal` if it changed) what makes this session a win, in one sentence. It should match the session's checkpoint.
+4. Start on the first ticket. Move it to `doing`.
+
+### While building
+- One ticket at a time. Move it to `doing` when you start, `shipped` when its "done" is true, with `aiMinutes` = the real wall-clock minutes it took. Add a `log` line when something real ships.
+- Found new work? Add a ticket (`discovered`), tier it honestly, put it in `backlog`, and keep going on the current ticket. Do not silently absorb it.
+- A definition-of-done check now passes? Set its `ok: true`. These three to five checks are the demo; watch them turn green.
+- Stuck for more than 20 minutes on one ticket? Say so. Options: split it, swap it for the next `must`, or move the hard part to a `should`. Decide in two minutes, not twenty more.
+- **Friday 11:30 checkpoint (Session 3).** Stop and look: is Must-ship solid? If not, apply the `cutLine` now. Move the cut tickets, write the reasons, and tell the builder what the demo will be.
+
+### Session close (last 5 minutes)
+1. Mark the session `done`. Set `checkpointHit` true or false, honestly, against the session's checkpoint text.
+2. Fill `minutesUsed` (real minutes spent building) and `tokens`. In Claude Code, run `/cost` and record the total tokens; in Codex, read the token count from `/status`; elsewhere, estimate or leave 0. Record the number since the last close, not the lifetime total.
+3. Write `closeNote`: "Next session starts with <ticket id>: <what>". The next session should not start with a question.
+4. Tickets still `doing` or `session` stay where they are for the next session, or go back to `backlog` if the plan changed.
+5. Say the room score in one line: tickets shipped, human-hours shipped, checkpoint hit or missed.
+
+### Session 4 (Fri 2:00 to 2:45)
+Build until **2:30**, then stop building no matter what. Rehearse the 3-minute demo once against the definition-of-done checks. Submit by 2:45. Then run Report mode.
+
+## Report mode
+
+The board's Report view computes the numbers from the data: tickets created, shipped, cut and open; shipped work in human-hours; build time used; the compression multiple (shipped human-hours ÷ build hours); tokens; the definition-of-done checks; and what remains, with an estimate in human-hours and at the builder's own pace. Your job is the part a page cannot compute.
+
+1. Make sure every session that ran is `done` with `minutesUsed` and `tokens`, every shipped ticket has `aiMinutes`, and every `done` check that passed is `ok: true`. The numbers are only as honest as the board.
+2. Write `report.summary`: two to four short paragraphs, in plain words, for the builder to read on Friday night and to show their team on Monday. What they set out to do, what shipped, the moment it first worked, what was cut and why, and what the numbers mean for them ("this is a Tuesday morning you get back every week"). No hype. Quote the real numbers from the board.
+3. Write `report.nextSteps`: three to six concrete next moves to take the open tickets live after the event, in order, with the first one small enough to do Monday.
+4. Write `report.manualHoursNote` only if the builder's estimates need a caveat the reader should know (for example, "estimates assume Maria does the data export herself").
+5. Tell the builder: open the board, click **Report**, then **Copy report as text** for the demo card, Slack, or their team, and **Print / save as PDF** to keep it.
+
+If the thing did not ship: the report still runs. "What remains" becomes the honest scope-of-work estimate for finishing it, and the summary says what was learned and what the next concrete step is. A clear unfinished report beats a vague finished one.
