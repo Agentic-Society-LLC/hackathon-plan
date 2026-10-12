@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hackathon Board</title>
+<!--
+  HACKATHON BOARD - the builder's home base for the Agentic Society Hackathon.
+
+  One file. No server, no install. Open it in a browser (double-click). The
+  builder's AI keeps it current by editing ONLY the JSON inside
+  <script id="hackathon-data"> below; the page renders everything from that.
+  Turn on "Auto-refresh" (top right) and the page reloads itself every 20
+  seconds, so the board moves while the AI works.
+
+  Three views: Board (tickets by column), Sessions (the run of show, with the
+  four build sessions opened up), Report (what shipped, what it would have
+  cost a human, what remains). Print the Report view to get a PDF. Light and
+  dark follow the system; the sun/moon button overrides.
+
+  Rules for the AI are in SKILL.md ("Build mode" and "The board"). The
+  schema is documented in the comment above the data block. Keep every key.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" />
+<style>
+  /* ── Tokens: light by default, dark by system or by the toggle ────────── */
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --surface-2: #fafafa;
+    --ink: #1d1d1f;
+    --ink-2: #515154;
+    --ink-3: #86868b;
+    --line: rgba(0, 0, 0, 0.08);
+    --line-2: rgba(0, 0, 0, 0.14);
+    --accent: #2f6bff;
+    --accent-soft: rgba(47, 107, 255, 0.10);
+    --good: #1f9d55;
+    --good-soft: rgba(31, 157, 85, 0.12);
+    --warn: #b7791f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+    --font: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r: 18px;
+    --r-sm: 10px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --surface: #161618; --surface-2: #1f1f22; --ink: #f5f5f7; --ink-2: #c7c7cc; --ink-3: #8e8e93;
+      --line: rgba(255,255,255,0.10); --line-2: rgba(255,255,255,0.18); --accent: #5b8cff; --accent-soft: rgba(91,140,255,0.16);
+      --good: #4cd080; --good-soft: rgba(76,208,128,0.14); --warn: #e3b341; --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 10px 30px rgba(0,0,0,0.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --surface: #161618; --surface-2: #1f1f22; --ink: #f5f5f7; --ink-2: #c7c7cc; --ink-3: #8e8e93;
+    --line: rgba(255,255,255,0.10); --line-2: rgba(255,255,255,0.18); --accent: #5b8cff; --accent-soft: rgba(91,140,255,0.16);
+    --good: #4cd080; --good-soft: rgba(76,208,128,0.14); --warn: #e3b341; --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 10px 30px rgba(0,0,0,0.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  button { font: inherit; color: inherit; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 84rem; margin: 0 auto; padding: 0 clamp(16px, 4vw, 48px) 96px; }
+  .doc { max-width: 46rem; margin: 0 auto; }
+
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  .top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 22px 0 10px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand svg { height: 22px; width: auto; color: var(--ink); }
+  .brand span { font-size: 12px; color: var(--ink-3); letter-spacing: 0.02em; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); justify-self: center; }
+  .seg button { border: 0; background: transparent; color: var(--ink-2); padding: 7px 18px; border-radius: 999px; cursor: pointer; font-weight: 500; font-size: 13.5px; transition: background .15s, color .15s; }
+  .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+  .tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+  .icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink-2); }
+  .icon[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .icon svg { width: 16px; height: 16px; }
+  #theme .moon { display: none; }
+  :root[data-theme="dark"] #theme .sun { display: none; }
+  :root[data-theme="dark"] #theme .moon { display: block; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #theme .sun { display: none; } :root:not([data-theme="light"]) #theme .moon { display: block; } }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Pomodoro */
+  .pomo { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 3px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+  .pomo__modes { display: inline-flex; padding: 2px; border-radius: 999px; background: var(--surface-2); }
+  .pomo__modes button { border: 0; background: transparent; color: var(--ink-3); font-family: var(--mono); font-size: 11px; padding: 4px 9px; border-radius: 999px; cursor: pointer; }
+  .pomo__modes button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+  .pomo__time { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 19px; font-weight: 500; min-width: 4.4ch; text-align: center; color: var(--ink); padding: 0 4px; }
+  .pomo.running .pomo__time { color: var(--accent); }
+  .pomo.done .pomo__time { color: var(--good); }
+  .pomo.done { border-color: var(--good); }
+  .pomo__btn { width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--surface-2); color: var(--ink); cursor: pointer; font-size: 11px; display: grid; place-items: center; }
+  #pomoGo { background: var(--accent); color: #fff; }
+
+  /* ── Hero ─────────────────────────────────────────────────────────────── */
+  .hero { padding: 40px 0 28px; }
+  .hero .eyebrow { margin: 0 0 12px; font-size: 13px; color: var(--ink-3); }
+  .hero h1 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 600; letter-spacing: -0.025em; line-height: 1.18; max-width: 30ch; text-wrap: balance; }
+  .hero h1 .what { color: var(--accent); }
+  .hero .meta { margin: 14px 0 0; font-size: 14px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .hero .meta b { font-weight: 500; color: var(--ink); }
+  .sample { margin: 10px 0 0; font-size: 13px; color: var(--ink-3); }
+  .sample code { font-family: var(--mono); font-size: 12px; }
+
+  /* Numbers row: four figures, thin dividers, no boxes */
+  .nums { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 0 36px; }
+  .num { padding: 20px 20px 20px 0; border-left: 1px solid var(--line); padding-left: 20px; min-width: 0; }
+  .num:first-child { border-left: 0; padding-left: 0; }
+  .num .k { font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+  .num .v { font-size: 2rem; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .num .v small { font-size: 0.95rem; font-weight: 500; color: var(--ink-3); margin-left: 6px; letter-spacing: 0; }
+  .num .s { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+  .num.now .v { color: var(--accent); }
+
+  /* ── Views ─────────────────────────────────────────────────────────────── */
+  .view[hidden] { display: none !important; }
+
+  /* Board */
+  .cols { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 20px; overflow-x: auto; padding-bottom: 12px; }
+  .col h2 { margin: 0 0 12px; font-size: 12px; font-weight: 500; color: var(--ink-3); display: flex; justify-content: space-between; letter-spacing: 0.02em; }
+  .col h2 .n { font-variant-numeric: tabular-nums; }
+  .col.shipped h2 { color: var(--good); }
+  .col.doing h2 { color: var(--accent); }
+  .stack { display: grid; gap: 10px; }
+  .card { background: var(--surface); border-radius: 14px; padding: 14px 15px; box-shadow: var(--shadow); display: grid; gap: 6px; }
+  .card .t { font-weight: 500; font-size: 14.5px; line-height: 1.35; }
+  .card .d { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+  .card .m { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .card .m .tier { font-weight: 500; }
+  .tier.must { color: var(--accent); }
+  .tier.should { color: var(--ink-2); }
+  .tier.stretch, .tier.prep { color: var(--ink-3); }
+  .risk { color: var(--warn); }
+  .x { color: var(--good); font-weight: 500; }
+  .card.shipped { box-shadow: none; border: 1px solid var(--line); background: transparent; }
+  .card.shipped .t { color: var(--ink-2); }
+  .card.cut { opacity: 0.6; box-shadow: none; border: 1px dashed var(--line-2); background: transparent; }
+  .card.cut .t { text-decoration: line-through; }
+  .card.doing { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .empty { font-size: 13px; color: var(--ink-3); padding: 10px 2px; }
+
+  /* Sessions: a document. Run of show with the build sessions opened up. */
+  .doc h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .doc .lede { margin: 0 0 34px; color: var(--ink-2); font-size: 15px; }
+  .day { margin: 34px 0 10px; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .ros { list-style: none; margin: 0; padding: 0; }
+  .row { display: grid; grid-template-columns: 7.5rem 1fr; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .row:last-child { border-bottom: 1px solid var(--line); }
+  .row .t { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--ink-3); padding-top: 3px; white-space: nowrap; }
+  .row .l { font-size: 14.5px; color: var(--ink-2); }
+  .row.build { padding: 18px 0; }
+  .row.build .l { color: var(--ink); }
+  .row.now { background: var(--accent-soft); margin: 0 -16px; padding-left: 16px; padding-right: 16px; border-radius: 12px; border-color: transparent; }
+  .row.now + .row { border-top-color: transparent; }
+  .row.build .h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .row.build .h b { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .badge { font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+  .badge.live { background: var(--accent); color: #fff; border-color: transparent; }
+  .badge.hit { background: var(--good-soft); color: var(--good); border-color: transparent; }
+  .badge.miss { color: var(--warn); }
+  .row.build .g { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); }
+  .row.build .cp { margin: 10px 0 0; font-size: 14px; }
+  .row.build .cp span { color: var(--ink-3); }
+  .row.build ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; color: var(--ink-2); }
+  .row.build li::before { content: "○  "; color: var(--ink-3); }
+  .row.build li.ok { color: var(--ink); }
+  .row.build li.ok::before { content: "✓  "; color: var(--good); }
+  .row.build .f { margin: 10px 0 0; font-size: 13px; color: var(--ink-3); display: flex; gap: 14px; flex-wrap: wrap; }
+  .row.build .next { margin: 8px 0 0; font-size: 14px; }
+  .row.build .next span { color: var(--ink-3); }
+  .sec { margin: 40px 0 0; }
+  .sec h3 { margin: 0 0 8px; font-size: 13px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .sec p { margin: 0; font-size: 15px; }
+  .log { list-style: none; margin: 0; padding: 0; }
+  .log li { display: grid; grid-template-columns: 7.5rem 1fr; gap: 16px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  .log li:last-child { border-bottom: 1px solid var(--line); }
+  .log .at { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); padding-top: 2px; }
+
+  /* Report: same document grammar */
+  .rep .nums { margin-top: 10px; }
+  .rep .sec p + p { margin-top: 10px; }
+  .rep ol, .rep ul { margin: 0; padding-left: 20px; font-size: 15px; }
+  .rep li { margin: 4px 0; }
+  .rep li .mono { color: var(--ink-3); font-size: 12.5px; margin-left: 6px; }
+  .done { list-style: none; padding: 0; }
+  .done li::before { content: "○  "; color: var(--ink-3); }
+  .done li.ok::before { content: "✓  "; color: var(--good); }
+  .done li.ok { color: var(--ink); }
+  .done li.no { color: var(--ink-2); }
+  .bar { height: 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; margin: 14px 0 6px; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .actions { display: flex; gap: 10px; margin-top: 36px; }
+  .btn { border: 1px solid var(--line-2); background: var(--surface); border-radius: 999px; padding: 9px 16px; cursor: pointer; font-size: 13.5px; font-weight: 500; }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: transparent; }
+  .foot { margin-top: 64px; font-size: 12px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 8px 20px; }
+
+  @media (max-width: 900px) {
+    .top { grid-template-columns: 1fr auto; }
+    .seg { grid-column: 1 / -1; justify-self: start; }
+    .nums { grid-template-columns: 1fr 1fr; }
+    .num:nth-child(3) { border-left: 0; padding-left: 0; }
+    .num:nth-child(n+3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 560px) {
+    .cols { grid-template-columns: repeat(5, 80vw); }
+    .row, .log li { grid-template-columns: 1fr; gap: 4px; }
+    .hero { padding-top: 24px; }
+  }
+  @media print {
+    :root { --bg: #fff; --surface: #fff; --surface-2: #f4f4f4; --ink: #111; --ink-2: #444; --ink-3: #777; --line: #ddd; --line-2: #bbb; --shadow: none; }
+    .top, .sample, .actions, .foot { display: none !important; }
+    .wrap { padding: 0; }
+    .row.now { background: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 384 131" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Agentic Society"><path d="M202.284 100.621C204.171 100.621 205.823 100.968 207.238 101.662C208.654 102.356 209.764 103.314 210.569 104.535C211.374 105.757 211.776 107.186 211.776 108.823H207.363C207.363 108.074 207.169 107.338 206.78 106.616C206.392 105.895 205.808 105.312 205.031 104.868C204.254 104.397 203.297 104.16 202.159 104.16C201.215 104.133 200.369 104.285 199.619 104.618C198.87 104.951 198.286 105.437 197.87 106.075C197.454 106.714 197.246 107.477 197.246 108.365C197.246 109.254 197.426 109.975 197.787 110.531C198.176 111.058 198.731 111.516 199.452 111.905C200.174 112.293 201.007 112.653 201.951 112.987C202.922 113.292 203.991 113.639 205.156 114.028C206.6 114.499 207.877 115.083 208.987 115.777C210.125 116.443 211.013 117.317 211.651 118.4C212.317 119.454 212.65 120.814 212.65 122.48C212.65 123.923 212.276 125.269 211.526 126.518C210.777 127.767 209.667 128.794 208.196 129.599C206.725 130.376 204.893 130.765 202.7 130.765C200.563 130.765 198.689 130.39 197.079 129.641C195.469 128.864 194.22 127.781 193.332 126.393C192.444 125.005 192 123.381 192 121.522H196.372C196.4 122.576 196.649 123.549 197.121 124.437C197.621 125.297 198.328 125.991 199.244 126.518C200.188 127.017 201.34 127.268 202.7 127.268C203.866 127.268 204.866 127.073 205.698 126.685C206.558 126.296 207.21 125.769 207.654 125.103C208.098 124.409 208.32 123.618 208.32 122.73C208.32 121.703 208.085 120.856 207.613 120.19C207.141 119.524 206.503 118.982 205.698 118.566C204.921 118.122 204.005 117.733 202.95 117.4C201.923 117.067 200.84 116.706 199.702 116.318C197.399 115.568 195.678 114.597 194.54 113.404C193.43 112.21 192.874 110.656 192.874 108.74C192.874 107.103 193.263 105.687 194.04 104.493C194.817 103.272 195.9 102.329 197.288 101.662C198.704 100.969 200.369 100.621 202.284 100.621ZM234.88 100.621C237.739 100.621 240.237 101.26 242.374 102.536C244.511 103.813 246.163 105.59 247.329 107.865C248.523 110.114 249.119 112.723 249.119 115.693C249.119 118.69 248.523 121.328 247.329 123.604C246.163 125.852 244.511 127.614 242.374 128.891C240.237 130.14 237.739 130.765 234.88 130.765C232.077 130.765 229.606 130.14 227.469 128.891C225.36 127.614 223.694 125.852 222.473 123.604C221.279 121.328 220.683 118.69 220.683 115.693C220.683 112.723 221.279 110.114 222.473 107.865C223.694 105.59 225.359 103.813 227.469 102.536C229.606 101.26 232.077 100.621 234.88 100.621ZM271.075 100.621C274.489 100.621 277.251 101.44 279.36 103.077C281.498 104.715 282.858 107.02 283.44 109.99H278.86C278.444 108.269 277.584 106.894 276.279 105.867C275.003 104.84 273.268 104.326 271.075 104.326C269.105 104.326 267.397 104.785 265.954 105.7C264.511 106.616 263.4 107.921 262.623 109.615C261.846 111.308 261.457 113.334 261.457 115.693C261.457 118.052 261.846 120.093 262.623 121.814C263.4 123.507 264.511 124.811 265.954 125.727C267.397 126.615 269.104 127.06 271.075 127.06C273.268 127.06 275.003 126.573 276.279 125.602C277.584 124.603 278.444 123.257 278.86 121.564H283.44C282.858 124.45 281.498 126.712 279.36 128.35C277.251 129.96 274.489 130.765 271.075 130.765C268.216 130.765 265.746 130.14 263.664 128.891C261.61 127.614 260.014 125.852 258.876 123.604C257.766 121.328 257.211 118.69 257.211 115.693C257.211 112.723 257.766 110.1 258.876 107.824C260.014 105.548 261.61 103.785 263.664 102.536C265.746 101.26 268.216 100.621 271.075 100.621ZM296.748 130.265H292.585V101.121H296.748V130.265ZM325.396 104.535H311.158V113.862H324.147V117.192H311.158V126.851H325.396V130.265H306.994V101.121H325.396V104.535ZM354.554 104.535H345.894V130.265H341.729V104.535H333.111V101.121H354.554V104.535ZM372.361 115.381L379.337 101.121H384L374.424 119.441V130.265H370.261V119.441L360.643 101.121H365.348L372.361 115.381ZM234.922 104.368C232.923 104.368 231.175 104.826 229.676 105.742C228.177 106.631 227.011 107.921 226.179 109.615C225.346 111.308 224.93 113.334 224.93 115.693C224.93 118.052 225.346 120.079 226.179 121.772C227.011 123.465 228.177 124.77 229.676 125.686C231.175 126.602 232.923 127.06 234.922 127.06C236.92 127.06 238.669 126.602 240.168 125.686C241.667 124.77 242.818 123.465 243.623 121.772C244.456 120.079 244.872 118.052 244.872 115.693C244.872 113.334 244.456 111.308 243.623 109.615C242.818 107.921 241.667 106.631 240.168 105.742C238.669 104.826 236.92 104.368 234.922 104.368Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M116.451 12.1995C120.143 12.1995 123.359 13.1524 123.359 15.4153C123.359 17.5592 120.858 22.681 115.855 22.681C112.997 22.6808 109.424 21.6088 102.636 19.346C101.445 20.2988 100.253 21.7276 99.0625 23.514C106.685 26.0151 112.641 31.8514 112.641 42.094C112.641 55.4335 98.3475 64.7239 88.5811 64.7239C84.889 64.7239 80.7203 64.1277 77.0283 62.6985C75.0036 64.0087 73.5742 65.2002 73.5742 67.2249C73.5743 69.4878 75.2422 71.8696 86.1992 72.4651L102.159 73.4183C114.427 74.1329 120.382 76.3957 120.382 84.8519C120.382 97.834 99.8963 115.223 77.9814 115.223C70.7162 115.223 59.1632 112.007 59.1631 100.812C59.1631 94.3804 64.5227 88.1869 73.8125 82.5892C68.8104 81.1599 65.8331 78.4204 65.833 73.4183C65.833 69.0115 68.9298 65.7959 75.3613 61.9847C69.168 59.0071 64.2842 53.6468 64.2842 44.595C64.2844 32.0896 75.5992 21.8472 88.5811 21.847C91.5586 21.847 94.537 22.2037 97.2764 22.9183C98.9437 20.4173 101.088 18.1549 103.589 16.4876C107.4 13.7484 111.449 12.1996 116.451 12.1995ZM75.8379 83.0657C70.4783 86.877 68.9297 91.0455 68.9297 94.9759C68.9298 104.504 77.1477 108.076 86.4375 108.076C103.112 108.076 114.665 99.7398 114.665 91.4026C114.665 87.5914 112.164 85.3283 102.755 84.8519L83.5791 83.8987C80.7209 83.7796 78.1007 83.423 75.8379 83.0657ZM31.2051 21.847C45.6163 21.8471 52.4053 29.589 52.4053 44.1194V67.1058C52.4053 75.6811 53.2386 79.2546 57.1689 80.5648V82.2317H45.2588C42.1623 82.2317 40.4953 80.5644 40.4951 77.4681V57.8157C37.1603 71.6315 28.5847 83.4229 16.1982 83.4231C7.38474 83.4231 0.000124015 77.8251 0 67.8206C0 55.5531 12.5058 50.789 27.2744 46.6204L40.4951 42.8089C40.2569 31.0179 33.8252 26.4916 25.0117 26.4915C18.342 26.4915 11.791 29.3503 5.7168 36.6155L4.52637 35.5433C11.1961 27.3254 20.367 21.847 31.2051 21.847ZM153.569 21.847C169.648 21.847 178.224 32.9235 178.224 43.2855H133.084L132.846 47.097C132.846 62.6992 142.374 73.7757 157.5 73.7757C166.313 73.7756 173.102 69.9642 178.104 64.3665L179.177 65.5569C173.698 73.8941 164.289 83.4231 150.473 83.4231C137.252 83.4231 122.245 74.0136 122.245 54.719C122.245 34.4717 138.086 21.847 153.569 21.847ZM274.464 22.681H292.925L292.448 24.5862H274.464V65.5569C274.464 72.9411 277.203 76.1573 282.443 76.1575C285.064 76.1575 289.114 75.0856 293.044 70.2024L294.235 71.3939C287.923 78.6591 281.848 83.4231 274.702 83.4231C266.603 83.4231 262.316 78.3015 262.315 65.4388V24.5862H254.693V22.681L272.559 6.95928H274.464V22.681ZM359.227 21.847C371.971 21.847 380.665 25.3012 380.665 28.636C380.665 32.328 376.139 36.3771 372.566 36.3773C369.232 36.3773 363.872 32.6849 354.701 23.8714C344.339 25.4197 337.669 35.6631 337.669 47.097C337.669 62.6991 347.197 73.7756 362.323 73.7757C371.137 73.7757 377.925 69.9642 382.928 64.3665L384 65.5569C378.521 73.8941 369.112 83.4231 355.296 83.4231C340.646 83.423 327.069 73.1797 327.069 54.719C327.069 34.7099 342.552 21.8471 359.227 21.847ZM202.423 22.5618V32.5657C208.973 27.2062 217.549 21.847 226.839 21.847C237.796 21.847 245.181 27.5637 245.181 41.4983V67.1058C245.181 75.681 246.014 79.2546 249.944 80.5648V82.2317H228.268V80.5648C232.198 79.2546 233.032 75.6811 233.032 67.1058V43.6429C233.032 32.9237 228.387 26.6107 219.573 26.6107C213.976 26.6107 208.854 29.3507 202.423 34.5911V67.1058C202.423 75.681 203.256 79.2546 207.187 80.5648V82.2317H185.511V80.5648C189.441 79.2545 190.274 75.6809 190.274 67.1058V39.7122C190.274 32.6855 188.488 31.494 185.511 30.1839V28.5169L201.231 21.6087L202.423 22.5618ZM315.012 22.5618V67.1058C315.012 75.6807 315.845 79.2535 319.775 80.5638V82.2317H298.1V80.5638C302.03 79.2535 302.863 75.6807 302.863 67.1058V39.7122C302.863 32.6854 301.077 31.494 298.1 30.1839V28.5169L313.82 21.6087L315.012 22.5618ZM27.751 48.1683C22.1532 49.7166 11.0763 53.7662 11.0762 63.6517C11.0762 71.5124 16.6746 74.7278 22.1533 74.7278C33.8252 74.7276 40.376 58.2917 40.4951 47.5726V44.4759L27.751 48.1683ZM101.683 48.8831C101.683 38.2831 95.3704 22.5615 84.6514 23.6331C77.5052 24.4668 75.3613 30.8991 75.3613 38.0452C75.3615 47.8116 80.1258 62.6985 91.083 62.6985C99.1817 62.6983 101.683 55.91 101.683 48.8831ZM149.877 23.9905C139.754 23.8716 134.632 32.3278 133.203 41.6175H166.194C164.646 31.8513 158.095 24.1096 149.877 23.9905ZM306.481 0.573541C306.655 -0.191221 307.744 -0.19114 307.918 0.573541L308.101 1.37823C308.9 4.90951 311.726 7.62554 315.286 8.28546C315.992 8.41624 315.992 9.42811 315.286 9.55889C311.726 10.2188 308.9 12.9348 308.101 16.4661L307.918 17.2698C307.745 18.0351 306.655 18.0351 306.481 17.2698L306.299 16.4661C305.499 12.9347 302.673 10.2187 299.113 9.55889C298.408 9.42795 298.408 8.41642 299.113 8.28546C302.673 7.62564 305.499 4.90961 306.299 1.37823L306.481 0.573541Z" fill="currentColor"/></svg>
+      <span>Hackathon board</span>
+    </div>
+    <div class="seg" role="tablist" aria-label="View">
+      <button role="tab" aria-selected="true" data-view="board">Board</button>
+      <button role="tab" aria-selected="false" data-view="sessions">Sessions</button>
+      <button role="tab" aria-selected="false" data-view="report">Report</button>
+    </div>
+    <div class="tools">
+      <div class="pomo" id="pomo" aria-label="Pomodoro timer">
+        <div class="pomo__modes" role="group" aria-label="Length">
+          <button type="button" data-min="25" aria-pressed="true" title="25 minutes: build">25</button>
+          <button type="button" data-min="5" aria-pressed="false" title="5 minutes: look at the board, decide">5</button>
+        </div>
+        <output class="pomo__time" id="pomoTime" aria-live="off">25:00</output>
+        <button type="button" class="pomo__btn" id="pomoGo" aria-label="Start">▶</button>
+        <button type="button" class="pomo__btn" id="pomoReset" aria-label="Reset">↺</button>
+      </div>
+      <button class="icon" id="auto" aria-pressed="false" title="Auto-refresh: reload every 20 seconds so the board moves while your AI works" aria-label="Auto-refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button class="icon" id="theme" title="Light / dark" aria-label="Toggle light or dark">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow" id="who"></p>
+    <h1 id="one"></h1>
+    <p class="meta" id="chips"></p>
+    <p id="sample" class="sample" hidden>Sample data. Run <code>/hackathon-plan</code> and your AI replaces it with your project.</p>
+  </section>
+
+  <div class="nums" id="stats"></div>
+
+  <section class="view" id="view-board">
+    <div class="cols" id="cols"></div>
+  </section>
+
+  <section class="view doc" id="view-sessions" hidden>
+    <h2>Run of show</h2>
+    <p class="lede" id="sess-lede"></p>
+    <div id="ros"></div>
+    <div class="sec"><h3>Cut line</h3><p id="cutline"></p></div>
+    <div class="sec"><h3>Ship log</h3><div id="log"></div></div>
+  </section>
+
+  <section class="view doc rep" id="view-report" hidden>
+    <h2>Hackathon report</h2>
+    <p class="lede" id="rep-lede"></p>
+    <div class="nums" id="big"></div>
+    <div class="sec" id="story"></div>
+    <div class="sec" id="donelist"></div>
+    <div class="sec" id="shipped"></div>
+    <div class="sec" id="remaining"></div>
+    <div class="sec" id="method"></div>
+    <div class="actions">
+      <button class="btn primary" id="copyreport">Copy report as text</button>
+      <button class="btn" onclick="window.print()">Print / save as PDF</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Agentic Society · agenticsociety.com</span>
+    <span>Your AI edits the data block in this file. You just refresh.</span>
+  </footer>
+</div>
+
+<!--
+  DATA. The AI edits ONLY this block. Keep every key; add tickets freely.
+
+  event     the run of show, times only: agenda[] = {start, end, label,
+            kind: program | build | break | deadline, session (for build
+            blocks)} and submitBy. The clock card and "build time left" read
+            it. Edit only to reuse the board for a different event.
+  builder   name, business, level (1-3), tools[]
+  project   oneLiner, category, doneWall (12 words or fewer), demoMoment,
+            done[] = {text, ok}  the definition-of-done checks, ticked live
+  sessions  four fixed sessions. status: planned | active | done.
+            start/end are local ISO times (the clock and countdown use them).
+            minutesUsed + tokens are filled at session close; checkpointHit
+            is true/false once the session closes; closeNote = "next session
+            starts with ...".
+  tickets   id (T-01...), title, detail, tier: must | should | stretch | prep,
+            status: backlog | session | doing | shipped | cut,
+            session (1-4, which sprint it is planned for),
+            humanHours (honest estimate of a capable person doing it with no
+            AI; set when the ticket is created, never edited after),
+            aiMinutes (actual wall-clock minutes once shipped),
+            risk (true for the riskiest unknown), discovered ("S2" when the
+            ticket was found mid-build, "" when it came from the plan),
+            cutReason (when cut).
+  log       timeline entries {at, what}, newest last.
+  report    summary paragraphs the AI writes at the end; nextSteps[] for
+            what remains after the event; manualHoursNote for the
+            human-hours method.
+  sample    true until the AI personalizes the board; then false.
+-->
+<script id="hackathon-data" type="application/json">
+{
+  "sample": true,
+  "builder": { "name": "Maria", "business": "Lone Star Landscaping", "level": 2, "tools": ["Claude Code", "Gmail", "Google Sheets"] },
+  "project": {
+    "oneLiner": "I'm building a quote follow-up agent that drafts the next email for every stale estimate, so Lone Star stops losing jobs to silence.",
+    "category": "Revenue Engine",
+    "doneWall": "Every stale quote gets a drafted follow-up for Maria to approve.",
+    "demoMoment": "Open Gmail drafts: twelve follow-ups, each one naming the property and the quote amount.",
+    "done": [
+      { "text": "Paste a sheet of open quotes; within 2 minutes a draft appears in Gmail for each one older than 5 days", "ok": false },
+      { "text": "Each draft names the customer, the property and the quote amount from the sheet", "ok": true },
+      { "text": "Nothing sends without Maria clicking Send", "ok": true }
+    ]
+  },
+  "event": {
+    "name": "2-Day AI Hackathon",
+    "timezone": "America/Chicago",
+    "submitBy": "2026-10-16T14:45",
+    "agenda": [
+      { "start": "2026-10-15T08:00", "end": "2026-10-15T10:00", "label": "Doors, check-in, breakfast", "kind": "program" },
+      { "start": "2026-10-15T10:00", "end": "2026-10-15T10:45", "label": "Opening remarks", "kind": "program" },
+      { "start": "2026-10-15T10:45", "end": "2026-10-15T11:00", "label": "Seat by AI level", "kind": "program" },
+      { "start": "2026-10-15T11:00", "end": "2026-10-15T11:30", "label": "Planning Pomodoro: plan checked, Done sentence signed off", "kind": "program" },
+      { "start": "2026-10-15T11:30", "end": "2026-10-15T12:00", "label": "Lightning shares: read your one-liner", "kind": "program" },
+      { "start": "2026-10-15T12:00", "end": "2026-10-15T13:30", "label": "Build Session 1: Foundation", "kind": "build", "session": 1 },
+      { "start": "2026-10-15T13:30", "end": "2026-10-15T14:30", "label": "Lunch", "kind": "break" },
+      { "start": "2026-10-15T14:30", "end": "2026-10-15T16:00", "label": "Build Session 2: Rough end to end", "kind": "build", "session": 2 },
+      { "start": "2026-10-15T16:00", "end": "2026-10-15T17:00", "label": "Room target: 50% done. Happy hour", "kind": "program" },
+      { "start": "2026-10-16T09:00", "end": "2026-10-16T09:15", "label": "Doors, coffee", "kind": "program" },
+      { "start": "2026-10-16T09:15", "end": "2026-10-16T09:30", "label": "Standup by table", "kind": "program" },
+      { "start": "2026-10-16T09:30", "end": "2026-10-16T13:30", "label": "Build Session 3: Make it real (working lunch)", "kind": "build", "session": 3 },
+      { "start": "2026-10-16T13:30", "end": "2026-10-16T14:00", "label": "Break. Demo kit check", "kind": "break" },
+      { "start": "2026-10-16T14:00", "end": "2026-10-16T14:45", "label": "Build Session 4: Ship. Stop at 2:30, rehearse, submit", "kind": "build", "session": 4 },
+      { "start": "2026-10-16T14:45", "end": "2026-10-16T15:00", "label": "Submissions close. Room votes", "kind": "deadline" },
+      { "start": "2026-10-16T15:00", "end": "2026-10-16T16:00", "label": "Demo Day: 6 demos, 10 min each", "kind": "program" },
+      { "start": "2026-10-16T16:00", "end": "2026-10-16T16:30", "label": "Awards", "kind": "program" },
+      { "start": "2026-10-16T16:30", "end": "2026-10-16T17:00", "label": "Networking, group photo, pack up", "kind": "program" }
+    ]
+  },
+  "sessions": [
+    { "n": 1, "label": "Thu 12:00–1:30", "start": "2026-10-15T12:00", "end": "2026-10-15T13:30", "goal": "Foundation: real quote data flowing in; Gmail drafts working once by hand.", "checkpoint": "I can see this week's open quotes in a sheet my build can read.", "status": "done", "minutesUsed": 85, "tokens": 310000, "checkpointHit": true, "closeNote": "Session 2 starts with T-03: one draft from one real quote." },
+    { "n": 2, "label": "Thu 2:30–4:00", "start": "2026-10-15T14:30", "end": "2026-10-15T16:00", "goal": "Rough end to end: sheet in, one real draft out.", "checkpoint": "I ran it once start to finish and a real draft landed in Gmail.", "status": "done", "minutesUsed": 90, "tokens": 420000, "checkpointHit": true, "closeNote": "Friday starts with the stale-quote filter and the full sheet." },
+    { "n": 3, "label": "Fri 9:30–1:30", "start": "2026-10-16T09:30", "end": "2026-10-16T13:30", "goal": "Make it real: all open quotes, the messy ones, the approval step. 11:30 checkpoint.", "checkpoint": "It works on 5+ real quotes without me fixing things by hand.", "status": "active", "minutesUsed": 0, "tokens": 0, "checkpointHit": null, "closeNote": "" },
+    { "n": 4, "label": "Fri 2:00–2:45", "start": "2026-10-16T14:00", "end": "2026-10-16T14:45", "goal": "Ship: build until 2:30, stop, rehearse the 3-minute demo, submit by 2:45.", "checkpoint": "Submitted by 2:45 and the demo worked in rehearsal.", "status": "planned", "minutesUsed": 0, "tokens": 0, "checkpointHit": null, "closeNote": "" }
+  ],
+  "cutLine": "If the 11:30 Friday checkpoint is missed, cut the stale-quote filter and the property lookup; demo on the five quotes already working.",
+  "tickets": [
+    { "id": "T-01", "title": "Confirm Claude can read the quotes sheet", "detail": "Riskiest unknown. Share the Google Sheet, ask Claude to list the 5 most recent quotes.", "tier": "must", "status": "shipped", "session": 1, "humanHours": 1.5, "aiMinutes": 20, "risk": true, "discovered": "", "cutReason": "" },
+    { "id": "T-02", "title": "Gmail draft created from Claude", "detail": "One throwaway draft, to prove the connection works.", "tier": "must", "status": "shipped", "session": 1, "humanHours": 2, "aiMinutes": 35, "risk": false, "discovered": "", "cutReason": "" },
+    { "id": "T-03", "title": "One real follow-up draft from one real quote", "detail": "Customer name, property, amount pulled from the sheet row into the email.", "tier": "must", "status": "shipped", "session": 2, "humanHours": 3, "aiMinutes": 50, "risk": false, "discovered": "", "cutReason": "" },
+    { "id": "T-04", "title": "Follow-up email template in Maria's voice", "detail": "Three past emails as examples; short, friendly, one ask.", "tier": "must", "status": "shipped", "session": 2, "humanHours": 2, "aiMinutes": 25, "risk": false, "discovered": "", "cutReason": "" },
+    { "id": "T-05", "title": "Stale filter: only quotes older than 5 days with no reply", "detail": "Reads the 'last contact' column; skips anything marked won or lost.", "tier": "must", "status": "doing", "session": 3, "humanHours": 2.5, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
+    { "id": "T-06", "title": "Run on the whole sheet (38 quotes)", "detail": "One draft per stale quote, nothing for the rest.", "tier": "must", "status": "session", "session": 3, "humanHours": 4, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
+    { "id": "T-07", "title": "Handle quotes with no email address", "detail": "Found mid-build: 6 rows have a phone number only. Draft a text instead, flag for Maria.", "tier": "should", "status": "session", "session": 3, "humanHours": 1.5, "aiMinutes": 0, "risk": false, "discovered": "S3", "cutReason": "" },
+    { "id": "T-08", "title": "Morning run on its own at 7am", "detail": "Scheduled task so Maria opens Gmail to ready drafts.", "tier": "should", "status": "backlog", "session": 3, "humanHours": 3, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
+    { "id": "T-09", "title": "Property lookup: pull the address and job type into the draft", "detail": "Reads the estimate PDF link in the sheet.", "tier": "stretch", "status": "backlog", "session": 4, "humanHours": 4, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "" },
+    { "id": "T-10", "title": "Weekly summary to Maria: how many followed up, how many replied", "detail": "", "tier": "stretch", "status": "cut", "session": 4, "humanHours": 3, "aiMinutes": 0, "risk": false, "discovered": "", "cutReason": "Not needed for the demo; after the event." },
+    { "id": "T-11", "title": "Export quotes from the CRM to the sheet", "detail": "Prep-week item, done Monday night.", "tier": "prep", "status": "shipped", "session": 1, "humanHours": 1, "aiMinutes": 15, "risk": false, "discovered": "", "cutReason": "" }
+  ],
+  "log": [
+    { "at": "Thu 12:10", "what": "Sheet shared; Claude listed the 5 newest quotes. Riskiest unknown settled." },
+    { "at": "Thu 12:55", "what": "First Gmail draft created from Claude." },
+    { "at": "Thu 3:20", "what": "First real follow-up drafted for the Hernandez quote ($4,200). End to end works." },
+    { "at": "Thu 4:00", "what": "Session 2 closed: checkpoint hit. Room target (50% done) met." },
+    { "at": "Fri 9:40", "what": "Discovered 6 quotes with no email. New ticket T-07." }
+  ],
+  "report": {
+    "summary": [],
+    "nextSteps": [],
+    "manualHoursNote": ""
+  }
+}
+</script>
+
+<script>
+(function () {
+  // ── Theme: system by default; the button cycles light → dark → system ──
+  const root = document.documentElement;
+  const themeBtn = document.getElementById("theme");
+  let theme = null; try { theme = localStorage.getItem("hb-theme"); } catch (e) {}
+  const applyTheme = () => { if (theme === "light" || theme === "dark") root.setAttribute("data-theme", theme); else root.removeAttribute("data-theme"); };
+  applyTheme();
+  themeBtn.addEventListener("click", () => {
+    const isDark = root.getAttribute("data-theme") === "dark" || (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+    theme = isDark ? "light" : "dark";
+    try { localStorage.setItem("hb-theme", theme); } catch (e) {}
+    applyTheme();
+  });
+
+  const raw = document.getElementById("hackathon-data").textContent;
+  let D;
+  try { D = JSON.parse(raw); } catch (e) {
+    document.querySelector(".hero").insertAdjacentHTML("afterbegin", '<p class="sample">The data block is not valid JSON: ' + String(e.message) + '. Ask your AI to fix the JSON inside &lt;script id="hackathon-data"&gt;.</p>');
+    return;
+  }
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const h1 = (n) => (Math.round(n * 10) / 10).toString();
+  const sum = (arr, f) => arr.reduce((a, x) => a + (Number(f(x)) || 0), 0);
+  const tm = (d) => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const tmShort = (d) => tm(d).replace(":00", "").replace(" ", "").toLowerCase();
+
+  const T = D.tickets || [];
+  const S = D.sessions || [];
+  const b = D.builder || {}, p = D.project || {}, R = D.report || {};
+  const shipped = T.filter((t) => t.status === "shipped");
+  const open = T.filter((t) => t.status !== "shipped" && t.status !== "cut");
+  const cut = T.filter((t) => t.status === "cut");
+  const planned = T.length - cut.length;
+  const humanShipped = sum(shipped, (t) => t.humanHours);
+  const humanOpen = sum(open, (t) => t.humanHours);
+  const NOW = new Date();
+  const minutesUsed = sum(S.filter((s) => s.status === "done"), (s) => s.minutesUsed);
+  const minutesLive = (() => { const a = S.find((s) => s.status === "active"); if (!a) return 0; const st = new Date(a.start); const m = (NOW - st) / 60000; const cap = (new Date(a.end) - st) / 60000; return Math.max(0, Math.min(m, cap)); })();
+  const buildHours = (minutesUsed + minutesLive) / 60;
+  const compression = buildHours > 0 ? humanShipped / buildHours : 0;
+  const tokens = sum(S, (s) => s.tokens);
+  const plannedMinutes = sum(S, (s) => (new Date(s.end) - new Date(s.start)) / 60000);
+  const pct = planned ? Math.round((shipped.length / planned) * 100) : 0;
+  const tokStr = tokens >= 1e6 ? h1(tokens / 1e6) + "M" : Math.round(tokens / 1000) + "k";
+
+  // ── Hero ──────────────────────────────────────────────────────────────
+  $("#sample").hidden = !D.sample;
+  $("#who").textContent = [b.name, b.business].filter(Boolean).join(" · ") + (b.level ? " · Level " + b.level : "");
+  $("#one").innerHTML = esc(p.oneLiner || "Run /hackathon-plan to fill this in.").replace(/^I'm building (.+?) that/, 'I\'m building <span class="what">$1</span> that');
+  $("#chips").innerHTML = [
+    p.category ? "<span>" + esc(p.category) + "</span>" : "",
+    p.doneWall ? "<span>Done Wall <b>" + esc(p.doneWall) + "</b></span>" : "",
+    (b.tools || []).length ? "<span>" + esc(b.tools.join(", ")) + "</span>" : "",
+  ].filter(Boolean).join("");
+
+  // ── Clock from the run of show ────────────────────────────────────────
+  const A = ((D.event || {}).agenda || []).map((x) => ({ ...x, s: new Date(x.start), e: new Date(x.end) })).sort((a, c) => a.s - c.s);
+  const dur = (m) => (m >= 120 ? h1(m / 60) + "<small>h</small>" : Math.max(0, Math.round(m)) + "<small>min</small>");
+  const buildLeft = A.filter((x) => x.kind === "build" && x.e > NOW).reduce((acc, x) => acc + (x.e - Math.max(x.s, NOW)) / 60000, 0);
+  const current = A.find((x) => x.s <= NOW && NOW < x.e);
+  const next = A.find((x) => x.s > NOW);
+  const nextBuild = A.find((x) => x.kind === "build" && x.s > NOW);
+  const submitBy = (D.event || {}).submitBy ? new Date(D.event.submitBy) : null;
+  let clock;
+  if (A.length) {
+    if (current) {
+      const left = (current.e - NOW) / 60000;
+      clock = { k: current.kind === "build" ? "Session " + current.session + ", live" : current.kind === "deadline" ? "Deadline" : "Now", v: dur(left) + "<small>left</small>", s: current.label + (current.kind !== "build" && nextBuild ? ". Session " + nextBuild.session + " at " + tm(nextBuild.s) : ""), now: true };
+    } else if (next) {
+      const until = (next.s - NOW) / 60000;
+      clock = { k: until > 1440 ? "Hackathon" : "Up next", v: until > 1440 ? Math.ceil(until / 1440) + "<small>days</small>" : dur(until) + "<small>to go</small>", s: next.label + " · " + next.s.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }), now: until <= 1440 };
+    } else {
+      clock = { k: "Hackathon", v: "Done", s: "Open the Report", now: false };
+    }
+    if (submitBy && NOW < submitBy) clock.s += " · " + h1(buildLeft / 60) + " h of build time left, submit by " + tm(submitBy);
+  } else {
+    const a = S.find((s) => s.status === "active");
+    clock = a ? { k: "Session " + a.n, v: Math.max(0, Math.round((new Date(a.end) - NOW) / 60000)) + "<small>min left</small>", s: a.label, now: true } : { k: "Hackathon", v: "–", s: "", now: false };
+  }
+  const numsHtml = (arr) => arr.map((n) => '<div class="num' + (n.now ? " now" : "") + '"><div class="k">' + esc(n.k) + '</div><div class="v">' + n.v + "</div>" + (n.s ? '<div class="s">' + esc(n.s) + "</div>" : "") + "</div>").join("");
+  $("#stats").innerHTML = numsHtml([
+    clock,
+    { k: "Shipped", v: shipped.length + "<small>of " + planned + "</small>", s: ((p.done || []).filter((d) => d.ok).length) + " of " + (p.done || []).length + " done checks passing" + (cut.length ? ", " + cut.length + " cut" : "") },
+    { k: "Work shipped", v: h1(humanShipped) + "<small>h</small>", s: "human-hours, in " + h1(buildHours) + " h of build time" },
+    { k: "Compression", v: (compression ? h1(compression) : "–") + "<small>×</small>", s: "human time ÷ your time" },
+  ]);
+
+  // ── Board ─────────────────────────────────────────────────────────────
+  const cols = [["backlog", "Backlog"], ["session", "This session"], ["doing", "In progress", "doing"], ["shipped", "Shipped", "shipped"], ["cut", "Cut"]];
+  const order = { must: 0, should: 1, stretch: 2, prep: 3 };
+  const card = (t) => '<article class="card ' + esc(t.status) + '"><div class="t">' + esc(t.title) + "</div>" +
+    (t.detail && t.status !== "shipped" && t.status !== "cut" ? '<div class="d">' + esc(t.detail) + "</div>" : "") +
+    '<div class="m"><span>' + esc(t.id) + '</span><span class="tier ' + esc(t.tier) + '">' + esc(t.tier) + "</span>" +
+    (t.humanHours ? "<span>" + h1(t.humanHours) + " h</span>" : "") +
+    (t.status === "shipped" && t.aiMinutes ? "<span>" + Math.round(t.aiMinutes) + " min</span>" + (t.humanHours ? '<span class="x">' + h1((t.humanHours * 60) / t.aiMinutes) + "×</span>" : "") : "") +
+    (t.risk ? '<span class="risk">riskiest unknown</span>' : "") +
+    (t.discovered ? "<span>found " + esc(t.discovered) + "</span>" : "") +
+    (t.status === "cut" && t.cutReason ? "<span>" + esc(t.cutReason) + "</span>" : "") +
+    "</div></article>";
+  $("#cols").innerHTML = cols.map(([key, label, cls]) => {
+    const items = T.filter((t) => t.status === key).sort((a, c) => (order[a.tier] ?? 9) - (order[c.tier] ?? 9) || String(a.id).localeCompare(String(c.id)));
+    return '<div class="col ' + (cls || "") + '"><h2><span>' + esc(label) + '</span><span class="n">' + items.length + '</span></h2><div class="stack">' + (items.length ? items.map(card).join("") : '<div class="empty">Nothing here.</div>') + "</div></div>";
+  }).join("");
+
+  // ── Sessions: run of show document ────────────────────────────────────
+  const dayName = (d) => d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+  $("#sess-lede").textContent = (D.event || {}).name ? D.event.name + ". Four build sessions, about " + h1(plannedMinutes / 60) + " hours of build time. The build rows show the goal, what ends them, and the tickets planned for them." : "Four build sessions.";
+  const sessionFor = (n) => S.find((s) => s.n === n);
+  const buildRow = (x) => {
+    const s = sessionFor(x.session);
+    if (!s) return '<div class="l"><div class="h"><b>' + esc(x.label) + "</b></div></div>";
+    const mine = T.filter((t) => t.session === s.n && t.status !== "cut");
+    const badge = s.status === "active" ? '<span class="badge live">Live now</span>' : s.status === "done" ? (s.checkpointHit ? '<span class="badge hit">Checkpoint hit</span>' : '<span class="badge miss">Checkpoint missed</span>') : '<span class="badge">Planned</span>';
+    return '<div class="l"><div class="h"><b>' + esc(x.label) + "</b>" + badge + "</div>" +
+      '<p class="g">' + esc(s.goal) + "</p>" +
+      '<p class="cp"><span>Ends when</span> ' + esc(s.checkpoint) + "</p>" +
+      (mine.length ? "<ul>" + mine.map((t) => '<li class="' + (t.status === "shipped" ? "ok" : "") + '">' + esc(t.title) + "</li>").join("") + "</ul>" : "") +
+      (s.status === "done" ? '<div class="f"><span>' + s.minutesUsed + " min</span>" + (s.tokens ? "<span>" + Math.round(s.tokens / 1000) + "k tokens</span>" : "") + "<span>" + mine.filter((t) => t.status === "shipped").length + " of " + mine.length + " shipped</span></div>" : "") +
+      (s.closeNote ? '<p class="next"><span>Next</span> ' + esc(s.closeNote) + "</p>" : "") + "</div>";
+  };
+  let html = "", lastDay = "";
+  (A.length ? A : S.map((s) => ({ s: new Date(s.start), e: new Date(s.end), label: "Build Session " + s.n, kind: "build", session: s.n }))).forEach((x) => {
+    const day = dayName(x.s);
+    if (day !== lastDay) { html += (lastDay ? "</ol>" : "") + '<div class="day">' + esc(day) + '</div><ol class="ros">'; lastDay = day; }
+    const isNow = x.s <= NOW && NOW < x.e;
+    html += '<li class="row ' + (x.kind === "build" ? "build" : "") + (isNow ? " now" : "") + '"><div class="t">' + tmShort(x.s) + " – " + tmShort(x.e) + "</div>" + (x.kind === "build" ? buildRow(x) : '<div class="l">' + esc(x.label) + "</div>") + "</li>";
+  });
+  $("#ros").innerHTML = html + (lastDay ? "</ol>" : "");
+  $("#cutline").textContent = D.cutLine || "Decide it in Session 1: what gets cut if the Friday 11:30 checkpoint is missed.";
+  $("#log").innerHTML = (D.log || []).length ? '<ol class="log">' + D.log.map((l) => '<li><span class="at">' + esc(l.at) + "</span><span>" + esc(l.what) + "</span></li>").join("") + "</ol>" : '<p class="empty">Your AI adds a line here each time something ships.</p>';
+
+  // ── Report ────────────────────────────────────────────────────────────
+  $("#rep-lede").textContent = [b.name, b.business].filter(Boolean).join(", ") + (p.oneLiner ? ". " + p.oneLiner : "");
+  $("#big").innerHTML = numsHtml([
+    { k: "Tickets shipped", v: shipped.length + "<small>of " + planned + "</small>", s: pct + "%" + (cut.length ? ", " + cut.length + " cut on purpose" : "") },
+    { k: "Work shipped", v: h1(humanShipped) + "<small>h</small>", s: "human-hours a person would need by hand" },
+    { k: "Your build time", v: h1(buildHours) + "<small>h</small>", s: "of " + h1(plannedMinutes / 60) + " available" + (tokens ? ", " + tokStr + " tokens" : "") },
+    { k: "Compression", v: (compression ? h1(compression) : "–") + "<small>×</small>", s: "faster than by hand" },
+  ]);
+  $("#story").innerHTML = "<h3>What happened</h3>" + ((R.summary || []).length ? R.summary.map((x) => "<p>" + esc(x) + "</p>").join("") :
+    "<p>" + esc(b.name || "The builder") + " shipped " + shipped.length + " of " + planned + " tickets, work a capable person would need about " + h1(humanShipped) + " hours to do by hand, in " + h1(buildHours) + " hours of build time across " + S.filter((s) => s.status !== "planned").length + " sessions" + (tokens ? ", using about " + tokStr + " tokens" : "") + "." + (cut.length ? " " + cut.length + " ticket" + (cut.length > 1 ? "s were" : " was") + " cut on purpose to protect the demo." : "") + "</p><p class=\"sample\">Your AI writes the real story here at the end of Session 4.</p>") +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+  $("#donelist").innerHTML = "<h3>Definition of done</h3>" + ((p.done || []).length ? '<ul class="done">' + p.done.map((d) => '<li class="' + (d.ok ? "ok" : "no") + '">' + esc(d.text) + "</li>").join("") + "</ul>" : '<p class="empty">No checks yet.</p>') + (p.demoMoment ? "<p style='margin-top:10px'><span style='color:var(--ink-3)'>Demo moment</span> " + esc(p.demoMoment) + "</p>" : "");
+  $("#shipped").innerHTML = "<h3>Shipped</h3>" + (shipped.length ? "<ol>" + shipped.map((t) => "<li>" + esc(t.title) + '<span class="mono">' + h1(t.humanHours) + " h human" + (t.aiMinutes ? " · " + Math.round(t.aiMinutes) + " min" : "") + "</span></li>").join("") + "</ol>" : '<p class="empty">Nothing shipped yet.</p>');
+  const remainingAi = compression ? humanOpen / compression : humanOpen;
+  $("#remaining").innerHTML = "<h3>What remains</h3>" + (open.length ?
+    "<p>" + open.length + " open ticket" + (open.length > 1 ? "s" : "") + ", about " + h1(humanOpen) + " human-hours" + (compression ? ", or roughly " + h1(remainingAi) + " hours at the pace you kept this week" : "") + ".</p><ol>" + open.map((t) => "<li>" + esc(t.title) + '<span class="mono">' + esc(t.tier) + " · " + h1(t.humanHours) + " h</span></li>").join("") + "</ol>" :
+    "<p>Nothing left on the board. Everything planned either shipped or was cut on purpose.</p>") +
+    ((R.nextSteps || []).length ? "<p style='margin-top:12px'><b>Next steps</b></p><ul>" + R.nextSteps.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "") +
+    (cut.length ? "<p style='margin-top:12px;color:var(--ink-2)'>Cut on purpose: " + cut.map((t) => esc(t.title)).join("; ") + ".</p>" : "");
+  $("#method").innerHTML = "<h3>How the numbers work</h3><p style='color:var(--ink-2)'>" + esc(R.manualHoursNote || "Every ticket gets an honest estimate, when it is created, of how long a capable person would need to do it without AI. That number never changes. Build time is the clock time of the sessions you used. Compression is shipped human-hours divided by your build time. Tokens are what your AI reported at each session close. These are planning numbers, not an audit.") + "</p>";
+
+  $("#copyreport").addEventListener("click", async () => {
+    const lines = [
+      "HACKATHON REPORT · " + [b.name, b.business].filter(Boolean).join(", "), p.oneLiner || "", "",
+      "Shipped " + shipped.length + " of " + planned + " tickets (" + pct + "%).",
+      "Work shipped: ~" + h1(humanShipped) + " human-hours, in " + h1(buildHours) + " hours of build time (" + (compression ? h1(compression) + "x" : "n/a") + ").",
+      tokens ? "Tokens: ~" + tokStr + "." : "", "",
+      "SHIPPED", ...shipped.map((t) => "- " + t.title + " (" + h1(t.humanHours) + "h human)"),
+      "", "REMAINING (~" + h1(humanOpen) + " human-hours)", ...open.map((t) => "- " + t.title + " (" + t.tier + ", " + h1(t.humanHours) + "h)"),
+      ...(cut.length ? ["", "CUT ON PURPOSE", ...cut.map((t) => "- " + t.title + (t.cutReason ? ": " + t.cutReason : ""))] : []),
+      "", "DEFINITION OF DONE", ...(p.done || []).map((d) => (d.ok ? "[x] " : "[ ] ") + d.text),
+      ...((R.summary || []).length ? ["", ...R.summary] : []),
+    ];
+    try { await navigator.clipboard.writeText(lines.join("\n")); const btn = $("#copyreport"); btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy report as text"), 1500); } catch (e) { alert(lines.join("\n")); }
+  });
+
+  // ── Tabs ──────────────────────────────────────────────────────────────
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  const show = (v) => { tabs.forEach((t) => t.setAttribute("aria-selected", t.dataset.view === v ? "true" : "false")); document.querySelectorAll(".view").forEach((el) => (el.hidden = el.id !== "view-" + v)); try { localStorage.setItem("hb-view", v); } catch (e) {} };
+  tabs.forEach((t) => t.addEventListener("click", () => show(t.dataset.view)));
+  let v = "board"; try { v = localStorage.getItem("hb-view") || "board"; } catch (e) {}
+  if (location.hash === "#report") v = "report"; if (location.hash === "#sessions") v = "sessions";
+  show(v);
+
+  // ── Auto-refresh ──────────────────────────────────────────────────────
+  const auto = $("#auto");
+  let on = false; try { on = localStorage.getItem("hb-auto") === "1"; } catch (e) {}
+  const paintAuto = () => auto.setAttribute("aria-pressed", on ? "true" : "false");
+  paintAuto();
+  auto.addEventListener("click", () => { on = !on; try { localStorage.setItem("hb-auto", on ? "1" : "0"); } catch (e) {} paintAuto(); if (on) setTimeout(() => location.reload(), 20000); });
+  if (on) setTimeout(() => location.reload(), 20000);
+
+  // ── Pomodoro: state in localStorage so the auto-refresh reload keeps it ─
+  const pomo = $("#pomo"), pTime = $("#pomoTime"), pGo = $("#pomoGo"), pReset = $("#pomoReset");
+  const modes = Array.from(pomo.querySelectorAll("[data-min]"));
+  const load = () => { try { return JSON.parse(localStorage.getItem("hb-pomo") || "null") || {}; } catch (e) { return {}; } };
+  const save = (st) => { try { localStorage.setItem("hb-pomo", JSON.stringify(st)); } catch (e) {} };
+  let P = load(); if (!P.mode) P = { mode: 25, left: 25 * 60000 };
+  const baseTitle = document.title;
+  const fmt = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
+  const remaining = () => (P.endAt ? P.endAt - Date.now() : P.left);
+  let chimed = false;
+  const chime = () => { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.18, 0.36].forEach((t, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i === 2 ? 880 : 660; o.connect(g); g.connect(ctx.destination); g.gain.setValueAtTime(0.0001, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.16); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.18); }); } catch (e) {} };
+  const paintPomo = () => {
+    const r = remaining(); pTime.textContent = fmt(r);
+    const running = !!P.endAt && r > 0, done = !!P.endAt && r <= 0;
+    pomo.classList.toggle("running", running); pomo.classList.toggle("done", done);
+    pGo.textContent = running ? "❚❚" : "▶"; pGo.setAttribute("aria-label", running ? "Pause" : "Start");
+    modes.forEach((m) => m.setAttribute("aria-pressed", Number(m.dataset.min) === P.mode ? "true" : "false"));
+    document.title = running ? fmt(r) + " · " + baseTitle : done ? "Time · " + baseTitle : baseTitle;
+    if (done && !chimed) { chimed = true; chime(); }
+  };
+  pGo.addEventListener("click", () => {
+    const r = remaining();
+    if (P.endAt && r > 0) P = { mode: P.mode, left: r };
+    else if (P.endAt && r <= 0) { const nm = P.mode === 25 ? 5 : 25; P = { mode: nm, endAt: Date.now() + nm * 60000 }; chimed = false; }
+    else P = { mode: P.mode, endAt: Date.now() + (P.left || P.mode * 60000) };
+    save(P); paintPomo();
+  });
+  pReset.addEventListener("click", () => { P = { mode: P.mode, left: P.mode * 60000 }; chimed = false; save(P); paintPomo(); });
+  modes.forEach((m) => m.addEventListener("click", () => { P = { mode: Number(m.dataset.min), left: Number(m.dataset.min) * 60000 }; chimed = false; save(P); paintPomo(); }));
+  paintPomo(); setInterval(paintPomo, 500);
+})();
+</script>
+</body>
+</html>
